@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "A11y Barker",
+  "version": "0.1.0",
+  "description": "Accessibility visualizer: tab order, focus, screen reader content",
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["*://*/*"],
+  "devtools_page": "devtools.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "overlay/index.js",
+        "overlay/coordinator.js",
+        "analyzer/tabOrder.js",
+        "analyzer/srContent.js",
+        "analyzer/staticRules.js",
+        "analyzer/imageHealth.js",
+        "overlay/TabOverlay.js",
+        "overlay/HeadingOverlay.js",
+        "overlay/AriaHiddenOverlay.js",
+        "rules-registry.js",
+        "overlay/IssuesOverlay.js",
+        "overlay/HeadingTreePanel.js",
+        "utils/dom.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

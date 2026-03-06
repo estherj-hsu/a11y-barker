@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-base: #1a1f27;
+      --bg-panel: #161b22;
+      --bg-raised: #1c2230;
+      --bg-hover: #21293a;
+      --border: #30363d;
+      --text-primary: #e6edf3;
+      --text-muted: #7d8590;
+      --text-faint: #484f58;
+      --accent: #f0b429;
+      --accent-dim: #2d2208;
+      --green: #3fb950;
+      --green-dim: #0d2116;
+      --red: #f85149;
+      --red-dim: #2d0f0e;
+      --amber: #d29922;
+      --radius: 6px;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-ui: 'DM Sans', sans-serif;
+    }
+    body {
+      background: #0a0e14;
+      min-height: 100vh;
+      font-family: var(--font-ui);
+      font-size: 14px;
+    }
+    .sidebar {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-base);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .dog-wrap { width: 60px; height: 50px; flex-shrink: 0; }
+    .mood-judgemental .nose-g {
+      animation: twitch 3.5s ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    @keyframes twitch {
+      0%,85%,100% { transform: translateX(0); }
+      88% { transform: translateX(-1.5px); }
+      91% { transform: translateX(1.5px); }
+      94% { transform: translateX(-.8px); }
+      97% { transform: translateX(0); }
+    }
+    .blink {
+      animation: blink 5s ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .mood-judgemental .blink { animation: none; }
+    @keyframes blink {
+      0%,88%,100% { transform: scaleY(1); }
+      93% { transform: scaleY(0.05); }
+    }
+    .tear { opacity: 0; }
+    .mood-sad .tear { animation: teardrop 2.2s ease-in infinite; }
+    @keyframes teardrop {
+      0%   { transform: translateY(0); opacity: .9; }
+      100% { transform: translateY(20px); opacity: 0; }
+    }
+    .header-text { flex: 1; min-width: 0; }
+    .header-title { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--text-primary); }
+    .header-status { font-size: 14px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-mono); }
+    .header-status.happy { color: var(--green); }
+    .header-status.sad { color: var(--red); }
+    .header-status.judgemental { color: var(--amber); }
+    .sidebar-body { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+    .btn-scan { width: 100%; padding: 8px 12px; background: var(--accent); color: #0d1117; border: none; border-radius: var(--radius); font-family: var(--font-mono); font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.04em; transition: opacity 0.15s, transform 0.1s; }
+    .btn-scan:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-scan:active { transform: translateY(0); }
+    .btn-scan.scanning { background: var(--bg-raised); color: var(--text-muted); cursor: default; }
+    .section-label { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 0 2px; }
+    .toggles { display: flex; flex-direction: column; gap: 2px; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: var(--radius); cursor: pointer; transition: background 0.1s; }
+    .toggle-row:hover { background: var(--bg-hover); }
+    .toggle-row.on .pill { background: var(--accent-dim); border-color: var(--accent); }
+    .toggle-row.on .pill::after { transform: translateX(14px); background: var(--accent); }
+    .toggle-label { font-size: 15px; color: var(--text-primary); font-family: var(--font-mono); user-select: none; }
+    .pill { position: relative; width: 32px; height: 18px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 9px; transition: background 0.2s, border-color 0.2s; flex-shrink: 0; }
+    .pill::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: var(--text-faint); border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+    .issues-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .issue-count { font-family: var(--font-mono); font-size: 13px; padding: 2px 6px; background: var(--red-dim); color: var(--red); border-radius: 4px; font-weight: 700; }
+    .issue-count.zero { background: var(--green-dim); color: var(--green); }
+    .issue-list { display: flex; flex-direction: column; gap: 3px;}
+    .issue-item { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 7px 8px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: border-color 0.1s, background 0.1s; text-align: left; width: 100%; }
+    .issue-item:hover { background: var(--bg-hover); border-color: var(--red); }
+    .issue-tag { font-size: 12px; font-weight: 700; color: var(--red); background: var(--red-dim); padding: 1px 4px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top: 1px; text-decoration: none; }
+    .issue-tag:hover { text-decoration: underline; }
+    .issue-tag.warn { color: var(--amber); background: #2d1f08; }
+    .issue-msg { font-size: 14px; color: var(--text-primary); font-family: var(--font-mono); line-height: 1.4; }
+    .empty-state { text-align: center; padding: 20px 0; color: var(--text-muted); font-family: var(--font-mono); font-size: 14px; }
+    .invalidated-banner { padding: 10px 12px; background: var(--red-dim); color: var(--red); font-family: var(--font-mono); font-size: 13px; border-bottom: 1px solid var(--border); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="dog-wrap">
+        <svg id="tifaSvg" class="mood-judgemental" width="60" height="50" viewBox="0 0 332 276" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M139 25.6609C148.333 23.661 169.4 23.3939 179.8 25.2606C189.266 26.8606 206.999 32.5939 210.333 34.994C212.066 36.1939 215.533 36.5936 221.933 36.0604C230.466 35.527 231.8 35.7936 241 40.327C249.267 44.4603 254.467 48.7274 270.733 64.4608C294.6 87.6606 298.333 93.3945 298.333 107.128C298.2 118.194 295.4 125.261 285.8 138.327C276.867 150.46 275.266 154.061 272.333 168.06C270.866 174.727 268.733 181.66 267.533 183.527C265.667 186.46 264.6 186.727 259 186.194C255.533 185.794 250.866 184.327 248.6 182.727C246.466 181.127 244.333 179.794 243.933 179.794C243.534 179.799 245 186.197 247.133 194.06C251.376 209.839 252.059 217.045 249.182 217.125C246.894 218.786 244.485 220.407 242.102 221.922C218.101 236.998 189.929 246.937 160.708 246.504C145.594 246.246 130.574 243.594 116.22 238.994C104.278 235.138 92.8835 229.525 82.8486 221.884C80.3583 219.962 77.9278 217.897 75.7471 215.585C75.5618 215.385 75.4171 215.148 75.3301 214.89C75.0623 214.357 75 213.501 75 212.194C75 210.194 76.4663 202.86 78.333 196.06C80.1996 189.26 81.666 183.394 81.666 182.994C81.6659 182.727 79.9326 183.261 77.666 184.461C75.5326 185.527 70.8664 186.461 67.2666 186.461C57.9333 186.461 55.533 183.394 52.333 167.261C49.3997 152.727 48.5993 150.861 41.666 142.461C38.9993 139.127 34.9995 133.394 32.8662 129.794C29.2664 123.661 29 122.194 29 109.794C29.1333 97.794 29.5329 95.6605 32.8662 89.2606C39.3995 76.594 71.7992 45.5272 85.9326 38.327C89.9326 36.327 93.2664 35.6609 100.066 35.9276C106.066 36.1942 110.333 35.6608 113 34.1942C118.2 31.5275 129.8 27.7943 139 25.6609Z" fill="#b84a1a"/>
+          <ellipse cx="163" cy="175" rx="52" ry="40" fill="#d4824a"/>
+          <g class="nose-g">
+            <ellipse cx="163" cy="152" rx="28" ry="20" fill="#1e0d06"/>
+            <ellipse cx="151" cy="157" rx="8" ry="6" fill="#0d0603"/>
+            <ellipse cx="175" cy="157" rx="8" ry="6" fill="#0d0603"/>
+            <ellipse cx="154" cy="145" rx="7" ry="4" fill="#3a1a0e" opacity="0.55"/>
+            <ellipse cx="156" cy="143" rx="3.5" ry="2" fill="#fff" opacity="0.12"/>
+            <line x1="163" y1="172" x2="163" y2="184" stroke="#b87040" stroke-width="3.5" stroke-linecap="round"/>
+          </g>
+          <g id="eyesHappy" style="display:none">
+            <path class="blink" d="M 96 108 Q 118 88, 140 108" stroke="#1e0d06" stroke-width="8" stroke-linecap="round" fill="none" transform-origin="118px 98px"/>
+            <path class="blink" d="M 186 108 Q 208 88, 230 108" stroke="#1e0d06" stroke-width="8" stroke-linecap="round" fill="none" transform-origin="208px 98px"/>
+          </g>
+          <g id="eyesSad" style="display:none">
+            <ellipse cx="118" cy="110" rx="22" ry="25" fill="#e8ddd0"/>
+            <ellipse cx="208" cy="110" rx="22" ry="25" fill="#e8ddd0"/>
+            <ellipse cx="118" cy="113" rx="14" ry="17" fill="#1e0d06"/>
+            <ellipse cx="208" cy="113" rx="14" ry="17" fill="#1e0d06"/>
+            <ellipse cx="110" cy="100" rx="6" ry="7" fill="#fff" opacity="0.5"/>
+            <ellipse cx="200" cy="100" rx="6" ry="7" fill="#fff" opacity="0.5"/>
+            <path d="M 84 82 Q 118 96, 152 80" stroke="#7a2e0a" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <path d="M 174 80 Q 208 96, 242 82" stroke="#7a2e0a" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <ellipse class="tear" cx="100" cy="138" rx="7" ry="11" fill="#7ab8f5" opacity="0.9"/>
+          </g>
+          <g id="eyesJudge">
+            <ellipse cx="118" cy="110" rx="22" ry="24" fill="#e8ddd0"/>
+            <ellipse cx="208" cy="110" rx="22" ry="24" fill="#e8ddd0"/>
+            <ellipse cx="118" cy="113" rx="14" ry="15" fill="#1e0d06"/>
+            <ellipse cx="208" cy="113" rx="14" ry="15" fill="#1e0d06"/>
+            <rect x="96" y="86" width="44" height="24" rx="3" fill="#b84a1a"/>
+            <rect x="186" y="86" width="44" height="24" rx="3" fill="#b84a1a"/>
+            <path d="M 84 78 Q 118 86, 152 76" stroke="#7a2e0a" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <path d="M 174 76 Q 208 86, 242 78" stroke="#7a2e0a" stroke-width="7" stroke-linecap="round" fill="none"/>
+          </g>
+          <g id="mouthHappy" style="display:none">
+            <path d="M 124 186 Q 163 204, 202 186" stroke="#1e0d06" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M 126 186 Q 126 214, 163 215 Q 200 214, 200 186 Z" fill="#e05a7a"/>
+            <line x1="163" y1="186" x2="163" y2="215" stroke="#c0426a" stroke-width="4" stroke-linecap="round"/>
+            <ellipse cx="151" cy="196" rx="8" ry="5" fill="#f07898" opacity="0.5"/>
+          </g>
+          <path id="mouthSad" d="M 124 192 Q 163 180, 202 192" stroke="#1e0d06" stroke-width="5" stroke-linecap="round" fill="none" style="display:none"/>
+          <path id="mouthJudge" d="M 126 190 Q 163 184, 200 190" stroke="#1e0d06" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <circle cx="108" cy="172" r="3.5" fill="#7a2e0a" opacity="0.35"/>
+          <circle cx="116" cy="182" r="3.5" fill="#7a2e0a" opacity="0.35"/>
+          <circle cx="218" cy="172" r="3.5" fill="#7a2e0a" opacity="0.35"/>
+          <circle cx="210" cy="182" r="3.5" fill="#7a2e0a" opacity="0.35"/>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M139 25.6609C148.333 23.661 169.4 23.3939 179.8 25.2606C189.266 26.8606 206.999 32.5939 210.333 34.994C212.066 36.1939 215.533 36.5936 221.933 36.0604C230.466 35.527 231.8 35.7936 241 40.327C249.267 44.4603 254.467 48.7274 270.733 64.4608C294.6 87.6606 298.333 93.3945 298.333 107.128C298.2 118.194 295.4 125.261 285.8 138.327C276.867 150.46 275.266 154.061 272.333 168.06C270.866 174.727 268.733 181.66 267.533 183.527C265.667 186.46 264.6 186.727 259 186.194C255.533 185.794 250.866 184.327 248.6 182.727C246.466 181.127 244.333 179.794 243.933 179.794C243.534 179.799 245 186.197 247.133 194.06C251.376 209.839 252.059 217.045 249.182 217.125C246.894 218.786 244.485 220.407 242.102 221.922C218.101 236.998 189.929 246.937 160.708 246.504C145.594 246.246 130.574 243.594 116.22 238.994C104.278 235.138 92.8835 229.525 82.8486 221.884C80.3583 219.962 77.9278 217.897 75.7471 215.585C75.5618 215.385 75.4171 215.148 75.3301 214.89C75.0623 214.357 75 213.501 75 212.194C75 210.194 76.4663 202.86 78.333 196.06C80.1996 189.26 81.666 183.394 81.666 182.994C81.6659 182.727 79.9326 183.261 77.666 184.461C75.5326 185.527 70.8664 186.461 67.2666 186.461C57.9333 186.461 55.533 183.394 52.333 167.261C49.3997 152.727 48.5993 150.861 41.666 142.461C38.9993 139.127 34.9995 133.394 32.8662 129.794C29.2664 123.661 29 122.194 29 109.794C29.1333 97.794 29.5329 95.6605 32.8662 89.2606C39.3995 76.594 71.7992 45.5272 85.9326 38.327C89.9326 36.327 93.2664 35.6609 100.066 35.9276C106.066 36.1942 110.333 35.6608 113 34.1942C118.2 31.5275 129.8 27.7943 139 25.6609ZM161 33.7938C135.267 33.7938 127.8 35.394 114.733 43.2606C108.333 47.1272 106.733 47.6608 103.666 46.4608C97.2663 44.061 90.5999 44.8605 84.2002 48.8602C77.0002 53.5268 51.1335 76.8611 46.4668 83.1277C39.9336 91.661 36.3331 101.127 36.333 109.794C36.333 119.26 38.9998 125.794 47.7998 137.928C54.8664 148.061 56.7327 152.194 59.666 164.461C60.7326 169.527 62.7326 174.726 63.9326 176.06C66.3326 178.727 71.1333 179.127 75.2666 176.994C80.8665 173.927 81.9333 167.66 83 132.461C83.8 104.861 84.4663 97.2608 86.8662 87.9276C90.4662 74.0609 93.6667 67.2607 96.7334 66.7274C99.9331 66.0611 99.6663 71.6611 95.7998 87.5272C92.8665 99.2605 92.4665 104.061 91.7998 139.794C91.1331 178.994 91.1329 179.261 86.5996 197.128C83.5216 209.536 82.455 213.408 80.8486 214.753C82.4395 215.649 84.0791 216.496 85.7178 217.309C96.4757 222.572 107.659 226.769 118.969 230.424C132.574 234.783 146.716 237.466 160.958 238.084C188.116 239.22 215.534 231.282 240.036 218.381C241.962 217.355 243.911 216.266 245.805 215.149C244.318 213.21 242.948 209.783 241.533 204.594C240.333 200.193 238.067 191.66 236.467 185.794C233.8 176.327 233.533 171.127 233 138.461C232.6 103.394 232.466 101.127 228.6 85.1277C226.333 75.2629 225.134 67.9301 225.933 67.1277C228.066 64.8611 231.533 68.4606 234.6 76.0604C239.533 88.0604 241.667 106.327 241.533 132.194C241.4 159.527 243.267 168.06 250.6 174.594C253.133 176.727 255.933 178.461 257 178.461C259.933 178.46 262.733 173.26 265 163.261C267.4 152.727 271 145.661 280.2 132.461C291.667 116.194 293.133 104.727 285.133 91.2606C281.132 84.3269 252.867 57.3938 242.2 50.0604C236.2 46.0605 233.533 45.1278 228.467 45.1277C225.133 45.2611 220.6 46.0606 218.333 46.994C214.733 48.4606 213.933 48.3275 208.6 44.1942C205.4 41.7942 198.467 38.4602 193.267 36.8602C184.867 34.1935 180.866 33.7938 161 33.7938Z" fill="#4a1508"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <div class="header-title">A11y Barker</div>
+        <div class="header-status judgemental" id="statusText">Waiting to sniff…</div>
+      </div>
+    </div>
+    <div class="invalidated-banner" id="invalidated-banner" style="display:none">
+      Extension was reloaded. Close and reopen DevTools, or refresh the page.
+    </div>
+    <div class="sidebar-body">
+      <button class="btn-scan" id="scan-btn">🐾 Sniff page</button>
+      <div class="section-label">Overlays</div>
+      <div class="toggles" id="toggles"></div>
+      <div class="issues-header" id="issues-header" style="display:none">
+        <span class="section-label">Issues found</span>
+        <div class="issue-count" id="issue-count">0</div>
+      </div>
+      <div id="issue-area">
+        <div class="empty-state" id="issue-empty">Click Sniff to find issues</div>
+        <div class="issue-list" id="issue-list" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+  <script src="rules-registry.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>
