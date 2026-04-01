@@ -32,6 +32,8 @@
         "rules-registry.js",
         "overlay/HeadingTreePanel.js",
         "utils/dom.js",
+        "ai/altChecker.js",
+        "ai/headingChecker.js",
         "content.js"
       ],
       "run_at": "document_idle"

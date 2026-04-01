@@ -38,12 +38,38 @@ A Chrome DevTools extension for visualizing accessibility on any webpage.
 
 MutationObserver watches for DOM and attribute changes (`hidden`, `aria-hidden`, `style`, `class`) and re-runs analysis automatically. Overlays stay accurate after dropdowns open, modals appear, or route changes occur.
 
+### AI checks (Anthropic)
+
+With a valid API key, the panel shows **AI Check** (below **Overlays**) with two **opt-in** toggles (both **off** by default until you turn them on in storage):
+
+| Toggle | What it does |
+|--------|----------------|
+| **Heading structure** | After **Sniff page**, sends the page’s visible heading list to Claude (JSON in / HTML out). Click an issue row to scroll to that heading. |
+| **Img alt** | After **Sniff page**, reviews each non–data-URL image’s `alt` in context (JSON in / HTML out). Click a row to highlight that image on the page. |
+
+Only toggles that are **on** when the sniff finishes trigger an API call. Turning a toggle **off** then **on** again reuses the **cached** result for that sniff until you **Sniff** again, **Clear**, or navigate — no duplicate request.
+
+The model is asked for **JSON only** (parsed and rendered as readable HTML in the panel). Heading collection skips headings under `aria-hidden` but keeps common **sr-only** patterns; see `ai/headingChecker.js`.
+
 ---
 
-## Planned
+## Using AI
 
-- **AI alt text checker** — user-supplied API key; analyzes alt quality and suggests improvements
-- **AI heading structure review** — sends heading tree to AI for semantic analysis beyond what static checks can catch
+1. **Copy `config.js.sample` to `config.js`** in the extension root (same folder as `manifest.json`). The real `config.js` is gitignored; the sample is safe to commit.
+2. **Set your Anthropic API key** in `globalThis.A11Y_BARKER_CONFIG.apiKey`.
+3. **Reload the extension** in `chrome://extensions` so the service worker loads `config.js` (`importScripts` in `background.js`).
+4. Open DevTools, enable **Heading structure** and/or **Img alt** under **AI Check** as needed.
+5. Run **Sniff page**. Each enabled check runs once per sniff (unless cached from a previous toggle cycle in the same session).
+
+Example (same as `config.js.sample`):
+
+```js
+globalThis.A11Y_BARKER_CONFIG = {
+  apiKey: 'your-anthropic-api-key',
+};
+```
+
+Requests go from the **background service worker** to Anthropic (`api.anthropic.com`), with `anthropic-dangerous-direct-browser-access` for extension contexts. The inspected page never sees your key.
 
 ---
 
@@ -52,7 +78,9 @@ MutationObserver watches for DOM and attribute changes (`hidden`, `aria-hidden`,
 ```
 a11y-barker/
 ├── manifest.json               # Manifest V3
-├── background.js               # Service worker — routes messages from panel to content script
+├── config.js.sample            # Template for config.js (commit this)
+├── config.js                   # Anthropic API key — copy from sample; gitignored
+├── background.js               # Service worker — routes messages; Anthropic fetch for AI alt + heading checks
 ├── content.js                  # Main logic: DOM analysis + overlay orchestration
 ├── rules-registry.js           # WCAG metadata for all rules
 ├── panel.html / panel.js       # DevTools panel UI (light/dark theme, Lucide icons)
@@ -73,7 +101,8 @@ a11y-barker/
 │   ├── colorContrast.js        # WCAG 1.4.3 contrast ratio checker
 │   └── imageHealth.js          # Image file size check via Performance API
 ├── ai/
-│   └── altChecker.js           # Claude API integration (TODO)
+│   ├── altChecker.js           # Images + JSON prompt for alt-text review
+│   └── headingChecker.js       # Headings + JSON prompt for structure review
 └── assets/
     └── dog/                    # Barker icon assets
 ```
@@ -92,10 +121,10 @@ A single coordinator collects badge data from all overlay types, groups by eleme
 When an element has an issue, its existing badge (tab, heading, aria-hidden) turns red. If no other overlay is active for that element, a standalone red issue badge is rendered instead. The Issues toggle works independently of other overlays.
 
 **AI calls via background.js**
-Routing AI requests through the service worker avoids CORS. The API key is stored in `chrome.storage.local` and never sent to any backend other than the AI provider directly.
+Routing AI requests through the service worker avoids CORS. The API key lives in local `config.js` (not in the repo) and is only used for direct requests to Anthropic from the service worker.
 
 **Performance API for image size**
 Image file sizes are read from `performance.getEntriesByType('resource')` — no extra network request needed.
 
-**AI checks are manual**
-Alt text quality analysis is triggered explicitly by the user to avoid unintended API usage and cost.
+**AI checks are toggle-gated and cached**
+Heading and img-alt runs only after **Sniff page** when each **AI Check** toggle is on (defaults off). Successful responses are cached in the panel for that sniff so toggling off/on does not call the API again until a new sniff, Clear, or navigation.

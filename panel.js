@@ -7,7 +7,29 @@ const SR_KEY = 'a11yBarkerSrContent';
 const HEADING_KEY = 'a11yBarkerHeading';
 const ARIA_HIDDEN_KEY = 'a11yBarkerAriaHidden';
 const ISSUES_PANEL_KEY = 'a11yBarkerIssuesPanel';
+const AI_HEADING_KEY = 'a11yBarkerAiHeading';
+const AI_ALT_KEY = 'a11yBarkerAiImgAlt';
 const THEME_KEY = 'a11yBarkerTheme';
+
+const AI_KEYS = [
+  [AI_HEADING_KEY, 'Heading structure'],
+  [AI_ALT_KEY, 'Img alt'],
+];
+
+/** When storage has no value yet, AI toggles are off (opt-in). */
+const AI_TOGGLE_DEFAULT = false;
+
+/** Set when background reports a non-empty Anthropic key in config.js */
+let _panelHasAiApiKey = false;
+
+/** Last successful AI response text per check; cleared on new sniff / clear / navigation. */
+let _cachedAltAiRaw = null;
+let _cachedHeadingAiRaw = null;
+
+function clearAiResultCaches() {
+  _cachedAltAiRaw = null;
+  _cachedHeadingAiRaw = null;
+}
 
 // ---------------------------------------------------------------------------
 // Lucide icon SVG strings (inline — no CDN, required by Chrome extension CSP)
@@ -151,6 +173,197 @@ function setMood(mood) {
   }
 }
 
+/**
+ * Shows or hides the post-scan Heading result block based on API key, Heading toggle, and scan state.
+ * @param {{ runAnalysis?: boolean }} [options] — if `runAnalysis`, runs Claude heading check when the section should be visible.
+ */
+function updateAiHeadingUiVisibility(options) {
+  if (_extInvalidated) return;
+  const runAnalysis = options?.runAnalysis === true;
+  const scanBtn = document.getElementById('scan-btn');
+  const scanned = scanBtn?.dataset.state === 'clear';
+  const headingSection = document.getElementById('ai-heading-section');
+  const resultEl = document.getElementById('heading-check-result');
+  if (!headingSection) return;
+  if (!_panelHasAiApiKey) {
+    headingSection.style.display = 'none';
+    if (resultEl) resultEl.textContent = '';
+    return;
+  }
+  chrome.storage.local.get([AI_HEADING_KEY], (data) => {
+    if (_extInvalidated) return;
+    const headingOn = data[AI_HEADING_KEY] !== undefined ? !!data[AI_HEADING_KEY] : AI_TOGGLE_DEFAULT;
+    if (!scanned || !headingOn) {
+      headingSection.style.display = 'none';
+      if (resultEl && !headingOn) resultEl.textContent = '';
+      return;
+    }
+    headingSection.style.display = 'flex';
+    if (runAnalysis) {
+      if (_cachedHeadingAiRaw != null) {
+        applyAiResultHtml(resultEl, _cachedHeadingAiRaw, 'heading');
+      } else {
+        runAiHeadingAnalysis();
+      }
+    }
+  });
+}
+
+/**
+ * Sends the page's headings to the background for Anthropic heading-structure review; updates `#heading-check-result`.
+ */
+function runAiHeadingAnalysis() {
+  const resultEl = document.getElementById('heading-check-result');
+  if (!resultEl || _extInvalidated) return;
+  resultEl.textContent = 'Analysing…';
+  sendToPage({ action: 'runHeadingCheck' }, (res) => {
+    if (_extInvalidated) return;
+    const inner = res?.response ?? res;
+    if (inner?.ok) {
+      _cachedHeadingAiRaw = inner.result;
+      applyAiResultHtml(resultEl, inner.result, 'heading');
+    } else {
+      resultEl.textContent = inner?.error || res?.error || 'Analysis failed';
+    }
+  });
+}
+
+/**
+ * Shows or hides the post-scan Img alt result block based on API key, Img alt toggle, and scan state.
+ * @param {{ runAnalysis?: boolean }} [options] — if `runAnalysis`, runs Claude alt check when the section should be visible.
+ */
+function updateAiAltUiVisibility(options) {
+  if (_extInvalidated) return;
+  const runAnalysis = options?.runAnalysis === true;
+  const scanBtn = document.getElementById('scan-btn');
+  const scanned = scanBtn?.dataset.state === 'clear';
+  const aiSection = document.getElementById('ai-section');
+  const resultEl = document.getElementById('alt-check-result');
+  if (!aiSection) return;
+  if (!_panelHasAiApiKey) {
+    aiSection.style.display = 'none';
+    if (resultEl) resultEl.textContent = '';
+    return;
+  }
+  chrome.storage.local.get([AI_ALT_KEY], (data) => {
+    if (_extInvalidated) return;
+    const imgAltOn = data[AI_ALT_KEY] !== undefined ? !!data[AI_ALT_KEY] : AI_TOGGLE_DEFAULT;
+    if (!scanned || !imgAltOn) {
+      aiSection.style.display = 'none';
+      if (resultEl) {
+        if (!imgAltOn) resultEl.textContent = '';
+      }
+      return;
+    }
+    aiSection.style.display = 'flex';
+    if (runAnalysis) {
+      if (_cachedAltAiRaw != null) {
+        applyAiResultHtml(resultEl, _cachedAltAiRaw, 'alt');
+      } else {
+        runAiAltAnalysis();
+      }
+    }
+  });
+}
+
+/**
+ * Sends the page’s images to the background for Anthropic alt-text review; updates `#alt-check-result`.
+ */
+function runAiAltAnalysis() {
+  const resultEl = document.getElementById('alt-check-result');
+  if (!resultEl || _extInvalidated) return;
+  resultEl.textContent = 'Analysing…';
+  sendToPage({ action: 'runAltCheck' }, (res) => {
+    if (_extInvalidated) return;
+    const inner = res?.response ?? res;
+    if (inner?.ok) {
+      _cachedAltAiRaw = inner.result;
+      applyAiResultHtml(resultEl, inner.result, 'alt');
+    } else {
+      resultEl.textContent = inner?.error || res?.error || 'Analysis failed';
+    }
+  });
+}
+
+function renderAiToggles() {
+  if (_extInvalidated) return;
+  const container = document.getElementById('ai-check-toggles');
+  if (!container) return;
+  try {
+    chrome.storage.local.get(AI_KEYS.map(([k]) => k), (data) => {
+      if (_extInvalidated) return;
+      container.innerHTML = '';
+      AI_KEYS.forEach(([key, label]) => {
+        const checked = data[key] !== undefined ? !!data[key] : AI_TOGGLE_DEFAULT;
+        const row = document.createElement('div');
+        row.className = 'toggle-row' + (checked ? ' on' : '');
+        row.dataset.key = key;
+        row.innerHTML = `<span class="toggle-label">${escapeHtml(label)}</span><div class="pill"></div>`;
+        row.addEventListener('click', () => {
+          if (_extInvalidated) return;
+          const next = !row.classList.contains('on');
+          row.classList.toggle('on', next);
+          try {
+            chrome.storage.local.set({ [key]: next }, () => {
+              if (_extInvalidated) return;
+              const scanned = document.getElementById('scan-btn')?.dataset.state === 'clear';
+              if (key === AI_ALT_KEY && next && scanned) {
+                updateAiAltUiVisibility({ runAnalysis: true });
+              } else if (key === AI_HEADING_KEY && next && scanned) {
+                updateAiHeadingUiVisibility({ runAnalysis: true });
+              } else {
+                updateAiAltUiVisibility();
+                updateAiHeadingUiVisibility();
+              }
+            });
+          } catch (_) {
+            _extInvalidated = true;
+            showInvalidatedBanner();
+            return;
+          }
+        });
+        container.appendChild(row);
+      });
+    });
+  } catch (_) {
+    _extInvalidated = true;
+    showInvalidatedBanner();
+  }
+}
+
+function refreshAiCheckSection() {
+  if (_extInvalidated) return;
+  try {
+    chrome.runtime.sendMessage(
+      { from: 'panel', payload: { action: 'getAiConfigStatus' } },
+      (res) => {
+        if (_extInvalidated) return;
+        const section = document.getElementById('ai-check-section');
+        if (chrome.runtime?.lastError || !section) {
+          _panelHasAiApiKey = false;
+          if (section) section.style.display = 'none';
+          updateAiAltUiVisibility();
+          updateAiHeadingUiVisibility();
+          return;
+        }
+        const hasApiKey = !!(res?.ok && res?.hasApiKey);
+        _panelHasAiApiKey = hasApiKey;
+        if (hasApiKey) {
+          section.style.display = '';
+          renderAiToggles();
+        } else {
+          section.style.display = 'none';
+        }
+        updateAiAltUiVisibility();
+        updateAiHeadingUiVisibility();
+      }
+    );
+  } catch (_) {
+    _extInvalidated = true;
+    showInvalidatedBanner();
+  }
+}
+
 function renderToggles() {
   if (_extInvalidated) return;
   try {
@@ -192,6 +405,197 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
+/**
+ * Parses AI output expected to be JSON only; strips optional ``` fences; tries `{`…`}` slice if needed.
+ * @param {string|null|undefined} raw
+ * @returns {{ ok: true, value: object } | { ok: false, message: string, raw: string }}
+ */
+function parseAiJsonRaw(raw) {
+  if (raw == null || String(raw).trim() === '') {
+    return { ok: false, message: 'No text returned from the model.', raw: '' };
+  }
+  let s = String(raw).trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence) s = fence[1].trim();
+
+  function tryParseObj(str) {
+    try {
+      const value = JSON.parse(str);
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) return value;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  let v = tryParseObj(s);
+  if (!v) {
+    const start = s.indexOf('{');
+    const end = s.lastIndexOf('}');
+    if (start !== -1 && end > start) v = tryParseObj(s.slice(start, end + 1));
+  }
+  if (!v) return { ok: false, message: 'Invalid JSON from model.', raw: s };
+  return { ok: true, value: v };
+}
+
+function altStatusClass(status) {
+  const u = String(status || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  if (u === 'GOOD') return 'ai-st-good';
+  if (u === 'TOO GENERIC') return 'ai-st-generic';
+  if (u === 'MISSING') return 'ai-st-missing';
+  if (u === 'DECORATIVE OK') return 'ai-st-dec-ok';
+  if (u === 'DECORATIVE WRONG') return 'ai-st-dec-wrong';
+  return 'ai-st-default';
+}
+
+function buildHeadingReviewDom(obj) {
+  const root = document.createElement('div');
+  const issues = Array.isArray(obj.issues) ? obj.issues : [];
+  const hasIssues = issues.length > 0;
+  const issuesBlock = document.createElement('div');
+  issuesBlock.className = 'ai-result-section';
+  if (!hasIssues) {
+    const none = document.createElement('p');
+    none.className = 'ai-result-none';
+    none.textContent = 'No issues reported.';
+    issuesBlock.appendChild(none);
+  } else {
+    const subHead = document.createElement('div');
+    subHead.className = 'ai-result-subhead';
+    subHead.textContent = 'Issues';
+    issuesBlock.appendChild(subHead);
+    issues.forEach((item, i) => {
+      const headingIdx =
+        item.headingIndex != null &&
+        String(item.headingIndex).trim() !== '' &&
+        !Number.isNaN(Number(item.headingIndex))
+          ? Math.floor(Number(item.headingIndex))
+          : i + 1;
+      const row = document.createElement('div');
+      row.className = 'ai-heading-issue-row ai-heading-issue-row--clickable';
+      row.setAttribute('role', 'button');
+      row.tabIndex = 0;
+      row.title = 'Show heading #' + headingIdx + ' on the page';
+      const head = document.createElement('div');
+      head.className = 'ai-heading-issue-row-head';
+      const idx = document.createElement('span');
+      idx.className = 'ai-heading-issue-index';
+      idx.textContent = '#' + headingIdx;
+      const wcag = document.createElement('span');
+      wcag.className = 'ai-wcag-pill';
+      const wc = item.wcag != null && String(item.wcag).trim() !== '' ? String(item.wcag).trim() : '—';
+      wcag.textContent = 'WCAG ' + wc;
+      head.appendChild(idx);
+      head.appendChild(wcag);
+      const desc = document.createElement('div');
+      desc.className = 'ai-heading-issue-desc';
+      desc.textContent = item.description != null ? String(item.description) : '';
+      row.appendChild(head);
+      row.appendChild(desc);
+      function goHighlight() {
+        sendToPage({ action: 'highlightHeadingIndex', headingIndex: headingIdx });
+      }
+      row.addEventListener('click', goHighlight);
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          goHighlight();
+        }
+      });
+      issuesBlock.appendChild(row);
+    });
+  }
+  root.appendChild(issuesBlock);
+
+  const recText = obj.recommendation != null ? String(obj.recommendation) : '';
+  if (hasIssues || recText.trim()) {
+    const recBlock = document.createElement('div');
+    recBlock.className = 'ai-result-section';
+    if (hasIssues) {
+      const subHead2 = document.createElement('div');
+      subHead2.className = 'ai-result-subhead';
+      subHead2.textContent = 'Recommendation';
+      recBlock.appendChild(subHead2);
+    }
+    const recP = document.createElement('p');
+    recP.className = 'ai-recommendation-text';
+    recP.textContent = recText;
+    recBlock.appendChild(recP);
+    root.appendChild(recBlock);
+  }
+  return root;
+}
+
+function buildAltReviewDom(obj) {
+  const root = document.createElement('div');
+  const images = Array.isArray(obj.images) ? obj.images : [];
+  if (images.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'ai-result-none';
+    p.textContent = 'No image entries in response.';
+    root.appendChild(p);
+    return root;
+  }
+  images.forEach((img, i) => {
+    // 1-based index matching collectImageData / listAltCheckImages order (not the model index field).
+    const displayIndex = i + 1;
+    const row = document.createElement('div');
+    row.className = 'ai-img-row ai-img-row--clickable';
+    row.setAttribute('role', 'button');
+    row.tabIndex = 0;
+    row.title = 'Show image #' + displayIndex + ' on the page';
+    const head = document.createElement('div');
+    head.className = 'ai-img-row-head';
+    const idx = document.createElement('span');
+    idx.className = 'ai-img-index';
+    idx.textContent = '#' + displayIndex;
+    const pill = document.createElement('span');
+    pill.className = 'ai-status-pill ' + altStatusClass(img.status);
+    pill.textContent = img.status != null ? String(img.status) : '—';
+    head.appendChild(idx);
+    head.appendChild(pill);
+    const reason = document.createElement('div');
+    reason.className = 'ai-img-reason';
+    reason.textContent = img.reason != null ? String(img.reason) : '';
+    row.appendChild(head);
+    row.appendChild(reason);
+    function goHighlight() {
+      sendToPage({ action: 'highlightAltImage', imageIndex: displayIndex });
+    }
+    row.addEventListener('click', goHighlight);
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        goHighlight();
+      }
+    });
+    root.appendChild(row);
+  });
+  return root;
+}
+
+/**
+ * Renders parsed AI JSON into readable HTML inside `el` (all text nodes — safe for model output).
+ * @param {HTMLElement} el
+ * @param {string|null|undefined} raw
+ * @param {'heading'|'alt'} kind
+ */
+function applyAiResultHtml(el, raw, kind) {
+  el.textContent = '';
+  const parsed = parseAiJsonRaw(raw);
+  if (!parsed.ok) {
+    const pre = document.createElement('pre');
+    pre.className = 'ai-result-error';
+    pre.textContent = (parsed.message || 'Parse error') + (parsed.raw ? '\n\n' + parsed.raw : '');
+    el.appendChild(pre);
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-result-html';
+  wrap.appendChild(kind === 'heading' ? buildHeadingReviewDom(parsed.value) : buildAltReviewDom(parsed.value));
+  el.appendChild(wrap);
+}
+
 document.getElementById('export-btn').addEventListener('click', () => {
   if (_extInvalidated) return;
   const btn = document.getElementById('export-btn');
@@ -214,6 +618,7 @@ document.getElementById('scan-btn').addEventListener('click', () => {
   if (_extInvalidated) return;
   const btn = document.getElementById('scan-btn');
   if (btn.dataset.state !== 'clear') {
+    clearAiResultCaches();
     btn.innerHTML = ICON_LOADER + 'Sniffing…';
     btn.dataset.state = 'scanning';
     btn.classList.add('scanning');
@@ -230,6 +635,14 @@ document.getElementById('scan-btn').addEventListener('click', () => {
       if (!contentRes?.ok && (contentRes?.error || res?.error)) {
         alert(contentRes?.error || res?.error);
       }
+      chrome.storage.local.get([AI_HEADING_KEY, AI_ALT_KEY], (data) => {
+        if (_extInvalidated) return;
+        const headingOn =
+          data[AI_HEADING_KEY] !== undefined ? !!data[AI_HEADING_KEY] : AI_TOGGLE_DEFAULT;
+        const imgAltOn = data[AI_ALT_KEY] !== undefined ? !!data[AI_ALT_KEY] : AI_TOGGLE_DEFAULT;
+        updateAiAltUiVisibility({ runAnalysis: imgAltOn });
+        updateAiHeadingUiVisibility({ runAnalysis: headingOn });
+      });
     };
     const timeoutId = setTimeout(() => {
       done({ ok: false, error: 'Scan timed out. Try refreshing the page and open DevTools before the page loads.' });
@@ -241,6 +654,13 @@ document.getElementById('scan-btn').addEventListener('click', () => {
         btn.innerHTML = ICON_PAW + 'Sniff page';
         btn.dataset.state = '';
         setMood('judgemental');
+        const altResult = document.getElementById('alt-check-result');
+        if (altResult) altResult.textContent = '';
+        const headingResult = document.getElementById('heading-check-result');
+        if (headingResult) headingResult.textContent = '';
+        clearAiResultCaches();
+        updateAiAltUiVisibility();
+        updateAiHeadingUiVisibility();
       }
     });
   }
@@ -413,6 +833,11 @@ function renderIssues(issues) {
 chrome.storage.onChanged.addListener((changes) => {
   if (_extInvalidated) return;
   try {
+    if (changes[AI_HEADING_KEY] || changes[AI_ALT_KEY]) {
+      renderAiToggles();
+      updateAiAltUiVisibility();
+      updateAiHeadingUiVisibility();
+    }
     if (changes[TAB_KEY] || changes[SR_KEY] || changes[HEADING_KEY] || changes[ARIA_HIDDEN_KEY] || changes[ISSUES_PANEL_KEY]) {
       renderToggles();
       if (changes[ISSUES_PANEL_KEY]) {
@@ -462,6 +887,13 @@ function reinitPanel() {
     list.style.display = 'none';
     list.innerHTML = '';
   }
+  const altResult = document.getElementById('alt-check-result');
+  if (altResult) altResult.textContent = '';
+  const headingResult = document.getElementById('heading-check-result');
+  if (headingResult) headingResult.textContent = '';
+  clearAiResultCaches();
+  updateAiAltUiVisibility();
+  updateAiHeadingUiVisibility();
   sendToPage({ action: 'clear' });
 }
 
@@ -478,6 +910,7 @@ window.addEventListener('pagehide', onPanelClose);
 window.addEventListener('unload', onPanelClose);
 
 renderToggles();
+refreshAiCheckSection();
 setMood('judgemental');
 
 // Initialize button content

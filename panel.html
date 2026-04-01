@@ -181,6 +181,149 @@
     .issue-msg { font-size: 14px; color: var(--text-primary); font-family: var(--font-mono); line-height: 1.4; }
     .empty-state { text-align: center; padding: 20px 0; color: var(--text-muted); font-family: var(--font-mono); font-size: 14px; }
     .invalidated-banner { padding: 10px 12px; background: var(--red-dim); color: var(--red); font-family: var(--font-mono); font-size: 13px; border-bottom: 1px solid var(--border); text-align: center; }
+
+    /* ── AI alt check ────────────────────────────────────────── */
+    .ai-section { display: none; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .alt-check-result {
+      padding: 7px 8px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--text-primary);
+      line-height: 1.45;
+    }
+    .alt-check-result .ai-result-html {
+      font-family: var(--font-ui);
+      white-space: normal;
+    }
+    .alt-check-result .ai-result-error {
+      font-family: var(--font-mono);
+      white-space: pre-wrap;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+    .alt-check-result .ai-result-section { margin-bottom: 12px; }
+    .alt-check-result .ai-result-section:last-child { margin-bottom: 0; }
+    .alt-check-result .ai-result-subhead {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .alt-check-result .ai-result-none { color: var(--text-muted); margin: 0; font-style: italic; }
+    .alt-check-result .ai-heading-issue-row {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      background: var(--bg-panel);
+    }
+    .alt-check-result .ai-heading-issue-row:last-child { margin-bottom: 0; }
+    .alt-check-result .ai-heading-issue-row-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .alt-check-result .ai-heading-issue-index {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .alt-check-result .ai-heading-issue-desc {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+    .alt-check-result .ai-heading-issue-row--clickable {
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .alt-check-result .ai-heading-issue-row--clickable:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+    .alt-check-result .ai-heading-issue-row--clickable:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .alt-check-result .ai-wcag-pill {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--amber);
+      background: var(--accent-dim);
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-bottom: 4px;
+    }
+    .alt-check-result .ai-recommendation-text { margin: 0; font-size: 14px; color: var(--text-primary); line-height: 1.45; }
+    .alt-check-result .ai-img-row {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      background: var(--bg-panel);
+    }
+    .alt-check-result .ai-img-row:last-child { margin-bottom: 0; }
+    .alt-check-result .ai-img-row-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .alt-check-result .ai-img-index {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .alt-check-result .ai-status-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .alt-check-result .ai-status-pill.ai-st-good { background: var(--green-dim); color: var(--green); }
+    .alt-check-result .ai-status-pill.ai-st-generic { background: var(--accent-dim); color: var(--amber); }
+    .alt-check-result .ai-status-pill.ai-st-missing { background: var(--red-dim); color: var(--red); }
+    .alt-check-result .ai-status-pill.ai-st-dec-ok { background: var(--green-dim); color: var(--green); }
+    .alt-check-result .ai-status-pill.ai-st-dec-wrong { background: var(--red-dim); color: var(--red); }
+    .alt-check-result .ai-status-pill.ai-st-default { background: var(--bg-hover); color: var(--text-muted); }
+    .alt-check-result .ai-img-reason { font-size: 14px; color: var(--text-primary); line-height: 1.4; }
+    .alt-check-result .ai-img-row--clickable {
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .alt-check-result .ai-img-row--clickable:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+    .alt-check-result .ai-img-row--clickable:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Alt / heading AI review: flat container (rows keep their own card borders) */
+    #alt-check-result.alt-text-review-result,
+    #heading-check-result.heading-text-review-result {
+      background: transparent;
+      border: none;
+      padding-left: 2px;
+      padding-right: 2px;
+    }
   </style>
 </head>
 <body>
@@ -206,6 +349,10 @@
       <button class="btn-export" id="export-btn"></button>
       <div class="section-label">Overlays</div>
       <div class="toggles" id="toggles"></div>
+      <div id="ai-check-section" class="ai-check-section" style="display:none">
+        <div class="section-label">AI Check</div>
+        <div class="toggles" id="ai-check-toggles"></div>
+      </div>
       <div class="issues-header" id="issues-header" style="display:none">
         <span class="section-label">Issues found</span>
         <div class="issue-count" id="issue-count">0</div>
@@ -213,6 +360,14 @@
       <div id="issue-area">
         <div class="empty-state" id="issue-empty">Click Sniff to find issues</div>
         <div class="issue-list" id="issue-list" style="display:none"></div>
+      </div>
+      <div id="ai-heading-section" class="ai-section" style="display:none">
+        <div class="section-label">Heading structure review</div>
+        <div id="heading-check-result" class="alt-check-result heading-text-review-result" aria-live="polite"></div>
+      </div>
+      <div id="ai-section" class="ai-section" style="display:none">
+        <div class="section-label">Alt text review</div>
+        <div id="alt-check-result" class="alt-check-result alt-text-review-result" aria-live="polite"></div>
       </div>
     </div>
   </div>

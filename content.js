@@ -37,6 +37,81 @@
   const HIGHLIGHT_CLASS = 'a11y-barker-issue-highlight';
   const REFRESH_DEBOUNCE_MS = 200;
 
+  let altImageBadgeEl = null;
+  let altImageBadgeReposition = null;
+
+  function removeAltImageBadge() {
+    if (altImageBadgeEl) {
+      altImageBadgeEl.remove();
+      altImageBadgeEl = null;
+    }
+    if (altImageBadgeReposition) {
+      window.removeEventListener('scroll', altImageBadgeReposition, true);
+      window.removeEventListener('resize', altImageBadgeReposition);
+      altImageBadgeReposition = null;
+    }
+  }
+
+  function positionAltImageBadge(img, badge) {
+    const r = img.getBoundingClientRect();
+    badge.style.left = `${Math.round(r.left)}px`;
+    badge.style.top = `${Math.round(r.top)}px`;
+  }
+
+  /**
+   * @param {Element} targetEl
+   * @param {string} badgeText e.g. "#1"
+   * @returns {boolean}
+   */
+  function highlightElementWithBadge(targetEl, badgeText) {
+    if (!targetEl?.isConnected) return false;
+    ensureHighlightStyles();
+    document.querySelectorAll('.' + HIGHLIGHT_CLASS).forEach((e) => e.classList.remove(HIGHLIGHT_CLASS));
+    removeAltImageBadge();
+    targetEl.classList.add(HIGHLIGHT_CLASS);
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    altImageBadgeEl = document.createElement('div');
+    altImageBadgeEl.className = 'a11y-barker-alt-img-badge';
+    altImageBadgeEl.textContent = badgeText;
+    document.body.appendChild(altImageBadgeEl);
+    altImageBadgeReposition = () => {
+      if (altImageBadgeEl && targetEl.isConnected) positionAltImageBadge(targetEl, altImageBadgeEl);
+    };
+    requestAnimationFrame(altImageBadgeReposition);
+    setTimeout(altImageBadgeReposition, 450);
+    window.addEventListener('scroll', altImageBadgeReposition, true);
+    window.addEventListener('resize', altImageBadgeReposition);
+    return true;
+  }
+
+  /**
+   * Highlights the Nth image in alt-check order (1-based), scrolls into view, shows a #N badge overlay.
+   * @param {number} oneBasedIndex
+   * @returns {boolean}
+   */
+  function highlightAltImageByIndex(oneBasedIndex) {
+    const listFn = window.A11yBarkerAltChecker?.listAltCheckImages;
+    if (!listFn) return false;
+    const list = listFn(document);
+    const i = Math.floor(Number(oneBasedIndex)) - 1;
+    if (i < 0 || i >= list.length) return false;
+    return highlightElementWithBadge(list[i], '#' + (i + 1));
+  }
+
+  /**
+   * Highlights the Nth visible heading (1-based, same order as collectHeadingData).
+   * @param {number} oneBasedIndex
+   * @returns {boolean}
+   */
+  function highlightHeadingByIndex(oneBasedIndex) {
+    const listFn = window.A11yBarkerHeadingChecker?.listHeadingElements;
+    if (!listFn) return false;
+    const list = listFn(document);
+    const i = Math.floor(Number(oneBasedIndex)) - 1;
+    if (i < 0 || i >= list.length) return false;
+    return highlightElementWithBadge(list[i], '#' + (i + 1));
+  }
+
   /**
    * Ensures the highlight stylesheet is injected into the page. Idempotent.
    * Called once at scan start so issue/heading highlight outlines work.
@@ -55,6 +130,21 @@
       '  outline: 3px solid #f59e0b !important;',
       '  outline-offset: 2px !important;',
       '  animation: a11y-barker-pulse 0.5s ease-in-out 3 !important;',
+      '}',
+      '.a11y-barker-alt-img-badge {',
+      '  position: fixed;',
+      '  z-index: 2147483647;',
+      '  left: 0; top: 0;',
+      '  background: #f59e0b;',
+      '  color: #0d1117;',
+      '  font-family: ui-monospace, monospace;',
+      '  font-weight: 700;',
+      '  font-size: 12px;',
+      '  line-height: 1;',
+      '  padding: 4px 7px;',
+      '  border-radius: 4px;',
+      '  pointer-events: none;',
+      '  box-shadow: 0 1px 4px rgba(0,0,0,.35);',
       '}',
     ].join('\n');
     (document.head || document.documentElement).appendChild(style);
@@ -275,6 +365,7 @@
    */
   function unhighlight() {
     document.querySelectorAll('.' + HIGHLIGHT_CLASS).forEach((e) => e.classList.remove(HIGHLIGHT_CLASS));
+    removeAltImageBadge();
   }
 
   /**
@@ -525,6 +616,54 @@
             reply({ ok: false, error: e?.message || 'Export failed' });
           }
           break;
+        case 'runAltCheck': {
+          const checker = window.A11yBarkerAltChecker;
+          if (!checker) {
+            reply({ ok: false, error: 'Alt checker not loaded' });
+            break;
+          }
+          const images = checker.collectImageData(document);
+          if (!images.length) {
+            reply({ ok: false, error: 'No images on this page' });
+            break;
+          }
+          const prompt = checker.buildPrompt(images);
+          chrome.runtime.sendMessage(
+            { from: 'panel', payload: { action: 'aiAltCheck', prompt } },
+            (bgRes) => {
+              if (chrome.runtime.lastError) {
+                reply({ ok: false, error: chrome.runtime.lastError.message });
+                return;
+              }
+              reply(bgRes);
+            }
+          );
+          break;
+        }
+        case 'runHeadingCheck': {
+          const checker = window.A11yBarkerHeadingChecker;
+          if (!checker) {
+            reply({ ok: false, error: 'Heading checker not loaded' });
+            break;
+          }
+          const headings = checker.collectHeadingData(document);
+          if (!headings.length) {
+            reply({ ok: false, error: 'No headings on this page' });
+            break;
+          }
+          const prompt = checker.buildPrompt(headings);
+          chrome.runtime.sendMessage(
+            { from: 'panel', payload: { action: 'aiHeadingCheck', prompt } },
+            (bgRes) => {
+              if (chrome.runtime.lastError) {
+                reply({ ok: false, error: chrome.runtime.lastError.message });
+                return;
+              }
+              reply(bgRes);
+            }
+          );
+          break;
+        }
         case 'highlight':
           if (msg.groupIndex != null) {
             const group = lastIssuesGrouped[msg.groupIndex];
@@ -542,6 +681,26 @@
           unhighlight();
           reply({ ok: true });
           break;
+        case 'highlightAltImage': {
+          const n = msg.imageIndex;
+          if (n == null) {
+            reply({ ok: false, error: 'Missing imageIndex' });
+            break;
+          }
+          const ok = highlightAltImageByIndex(n);
+          reply({ ok, error: ok ? undefined : 'Could not find that image on the page.' });
+          break;
+        }
+        case 'highlightHeadingIndex': {
+          const n = msg.headingIndex;
+          if (n == null) {
+            reply({ ok: false, error: 'Missing headingIndex' });
+            break;
+          }
+          const ok = highlightHeadingByIndex(n);
+          reply({ ok, error: ok ? undefined : 'Could not find that heading on the page.' });
+          break;
+        }
         default:
           reply({ ok: false });
       }
