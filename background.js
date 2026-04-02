@@ -1,5 +1,39 @@
 try { importScripts('config.js'); } catch (_) {}
 
+const DEFAULT_AI_MODEL = 'claude-haiku-4-5-20251001';
+const ALLOWED_AI_MODELS = new Set([
+  'claude-haiku-4-5-20251001',
+  'claude-sonnet-4-5-20251022',
+]);
+
+function normalizeAiModel(m) {
+  if (typeof m === 'string' && ALLOWED_AI_MODELS.has(m)) return m;
+  return DEFAULT_AI_MODEL;
+}
+
+/** Payload wins; then `config.js` `model`; then Haiku. */
+function resolveAiModel(payload) {
+  return normalizeAiModel(payload?.model ?? globalThis.A11Y_BARKER_CONFIG?.model);
+}
+
+function getDefaultModelFromConfig() {
+  return normalizeAiModel(globalThis.A11Y_BARKER_CONFIG?.model);
+}
+
+const DEFAULT_MAX_TOKENS = 1024;
+const MAX_TOKENS_MIN = 1;
+const MAX_TOKENS_MAX = 8192;
+
+/** From `config.js` `maxTokens`; clamped to a safe range. */
+function resolveMaxTokens() {
+  const raw = globalThis.A11Y_BARKER_CONFIG?.maxTokens;
+  if (raw === undefined || raw === null) return DEFAULT_MAX_TOKENS;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_MAX_TOKENS;
+  const i = Math.round(n);
+  return Math.min(MAX_TOKENS_MAX, Math.max(MAX_TOKENS_MIN, i));
+}
+
 const CONTENT_SCRIPTS = [
   'overlay/index.js',
   'overlay/coordinator.js',
@@ -25,7 +59,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.payload?.action === 'getAiConfigStatus') {
     const key = globalThis.A11Y_BARKER_CONFIG?.apiKey;
     const hasApiKey = typeof key === 'string' && key.trim().length > 0;
-    sendResponse({ ok: true, hasApiKey });
+    sendResponse({ ok: true, hasApiKey, defaultModel: getDefaultModelFromConfig() });
     return false;
   }
 
@@ -45,20 +79,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
+        model: resolveAiModel(msg.payload),
+        max_tokens: resolveMaxTokens(),
         messages: [{ role: 'user', content: msg.payload.prompt }],
       }),
     })
-      .then(r => r.json())
-      .then(data => {
-        if (!data.content) {
-          sendResponse({ ok: false, error: data.error?.message || 'API returned no content' });
-        } else {
-          sendResponse({ ok: true, result: data.content[0]?.text });
+      .then(async (r) => {
+        let data = {};
+        try {
+          data = await r.json();
+        } catch (_) { /* non-JSON body */ }
+        const text = data.content?.[0]?.text;
+        if (text != null && text !== '') {
+          sendResponse({ ok: true, result: text });
+          return;
         }
+        const errMsg = data.error?.message || 'API returned no content';
+        const errType = data.error?.type;
+        const aiAuthError =
+          r.status === 401 ||
+          r.status === 403 ||
+          errType === 'authentication_error' ||
+          (typeof errType === 'string' && errType.toLowerCase().includes('authentication'));
+        sendResponse({ ok: false, error: errMsg, aiAuthError });
       })
-      .catch(e => sendResponse({ ok: false, error: e.message }));
+      .catch((e) => sendResponse({ ok: false, error: e.message, aiAuthError: false }));
     return true;
   }
 

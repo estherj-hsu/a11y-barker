@@ -4,6 +4,14 @@ A Chrome DevTools extension for visualizing accessibility on any webpage.
 
 🔍🐶 Barker the dog judges your markup. He's happy when your page is clean, sad when it's not, and judgemental when he's waiting.
 
+![A11y Barker scanning the Paw Pals demo page, showing 57 accessibility issues including missing alt text, insufficient colour contrast, and missing page language](docs/screenshot.png)
+
+---
+
+## Demo
+
+Try it on the [Paw Pals demo page](https://estherh.dev/a11y-barker) — a intentionally inaccessible dog social network built to showcase what A11y Barker catches.
+
 ---
 
 ## Features
@@ -32,44 +40,61 @@ A Chrome DevTools extension for visualizing accessibility on any webpage.
 | Missing page language | 3.1.1 | A |
 | Focus outline removed | 2.4.7 | AA |
 | Color contrast insufficient | 1.4.3 | AA |
+| Label in name | 2.5.3 | AA |
 | Large image (>1 MB) | — | Best practice |
 
 ### SPA Support
 
 MutationObserver watches for DOM and attribute changes (`hidden`, `aria-hidden`, `style`, `class`) and re-runs analysis automatically. Overlays stay accurate after dropdowns open, modals appear, or route changes occur.
 
-### AI checks (Anthropic)
+### AI Checks (Anthropic)
 
-With a valid API key, the panel shows **AI Check** (below **Overlays**) with two **opt-in** toggles (both **off** by default until you turn them on in storage):
+With a valid API key, the panel shows **AI Check** (below **Overlays**) with two opt-in toggles (both off by default) and a **Claude model** selector:
 
 | Toggle | What it does |
-|--------|----------------|
-| **Heading structure** | After **Sniff page**, sends the page’s visible heading list to Claude (JSON in / HTML out). Click an issue row to scroll to that heading. |
-| **Img alt** | After **Sniff page**, reviews each non–data-URL image’s `alt` in context (JSON in / HTML out). Click a row to highlight that image on the page. |
+|---|---|
+| Heading structure | After **Sniff page**, sends the page's visible heading list to Claude (JSON in / HTML out). Click an issue row to scroll to that heading. |
+| Images alt | After **Sniff page**, reviews each non–data-URL image's `alt` in context (JSON in / HTML out). Click a row to highlight that image on the page. |
 
-Only toggles that are **on** when the sniff finishes trigger an API call. Turning a toggle **off** then **on** again reuses the **cached** result for that sniff until you **Sniff** again, **Clear**, or navigate — no duplicate request.
+**Model:** **Haiku** is the default (faster, lower cost). Choose **Sonnet** in the panel for higher-quality analysis. Your choice is stored in extension storage and overrides the default in `config.js` once set.
 
-The model is asked for **JSON only** (parsed and rendered as readable HTML in the panel). Heading collection skips headings under `aria-hidden` but keeps common **sr-only** patterns; see `ai/headingChecker.js`.
+Only toggles that are on when the sniff finishes trigger an API call. Turning a toggle off then on again reuses the cached result for that sniff until you Sniff again, Clear, or navigate — no duplicate requests. Changing the model clears the cache and re-runs visible AI sections when applicable.
 
 ---
 
 ## Using AI
 
-1. **Copy `config.js.sample` to `config.js`** in the extension root (same folder as `manifest.json`). The real `config.js` is gitignored; the sample is safe to commit.
-2. **Set your Anthropic API key** in `globalThis.A11Y_BARKER_CONFIG.apiKey`.
-3. **Reload the extension** in `chrome://extensions` so the service worker loads `config.js` (`importScripts` in `background.js`).
-4. Open DevTools, enable **Heading structure** and/or **Img alt** under **AI Check** as needed.
-5. Run **Sniff page**. Each enabled check runs once per sniff (unless cached from a previous toggle cycle in the same session).
-
-Example (same as `config.js.sample`):
+1. Copy `config.js.sample` to `config.js` in the extension root (same folder as `manifest.json`). The real `config.js` is gitignored; the sample is safe to commit.
+2. Set your Anthropic API key in `globalThis.A11Y_BARKER_CONFIG.apiKey`.
+3. Optionally adjust **`model`** (default Claude Haiku) and **`maxTokens`** (default `1024`) — see below.
+4. Reload the extension in `chrome://extensions` so the service worker picks up `config.js`.
+5. Open DevTools, enable **Heading structure** and/or **Images alt** under **AI Check**, and pick **Haiku** or **Sonnet** if you like.
+6. Run **Sniff page**.
 
 ```js
+// config.js (copy from config.js.sample)
 globalThis.A11Y_BARKER_CONFIG = {
   apiKey: 'your-anthropic-api-key',
+  // Used when the panel has not chosen a model yet (panel selection overrides via storage).
+  model: 'claude-haiku-4-5-20251001', // or 'claude-sonnet-4-5-20251022'
+  // Max output tokens per request; increase if AI reviews are truncated.
+  maxTokens: 1024,
 };
 ```
 
-Requests go from the **background service worker** to Anthropic (`api.anthropic.com`), with `anthropic-dangerous-direct-browser-access` for extension contexts. The inspected page never sees your key.
+Requests go from the background service worker directly to Anthropic. The inspected page never sees your key.
+
+---
+
+## Installation
+
+A11y Barker is not on the Chrome Web Store. To install:
+
+1. Clone or download this repo
+2. Go to `chrome://extensions`
+3. Enable **Developer mode** (top right)
+4. Click **Load unpacked** and select the repo folder
+5. Open DevTools on any page — find the **A11y Barker** tab
 
 ---
 
@@ -79,8 +104,8 @@ Requests go from the **background service worker** to Anthropic (`api.anthropic.
 a11y-barker/
 ├── manifest.json               # Manifest V3
 ├── config.js.sample            # Template for config.js (commit this)
-├── config.js                   # Anthropic API key — copy from sample; gitignored
-├── background.js               # Service worker — routes messages; Anthropic fetch for AI alt + heading checks
+├── config.js                   # Anthropic API key — gitignored
+├── background.js               # Service worker — routes messages; Anthropic fetch for AI checks
 ├── content.js                  # Main logic: DOM analysis + overlay orchestration
 ├── rules-registry.js           # WCAG metadata for all rules
 ├── panel.html / panel.js       # DevTools panel UI (light/dark theme, Lucide icons)
@@ -103,6 +128,8 @@ a11y-barker/
 ├── ai/
 │   ├── altChecker.js           # Images + JSON prompt for alt-text review
 │   └── headingChecker.js       # Headings + JSON prompt for structure review
+├── docs/
+│   └── screenshot.png          # Panel screenshot
 └── assets/
     └── dog/                    # Barker icon assets
 ```
@@ -121,10 +148,10 @@ A single coordinator collects badge data from all overlay types, groups by eleme
 When an element has an issue, its existing badge (tab, heading, aria-hidden) turns red. If no other overlay is active for that element, a standalone red issue badge is rendered instead. The Issues toggle works independently of other overlays.
 
 **AI calls via background.js**
-Routing AI requests through the service worker avoids CORS. The API key lives in local `config.js` (not in the repo) and is only used for direct requests to Anthropic from the service worker.
+Routing AI requests through the service worker avoids CORS. The API key, default model, and `maxTokens` are read from local `config.js` (not in the repo). The panel can override the model per install via `chrome.storage.local`; until then, `config.js` `model` applies.
 
 **Performance API for image size**
 Image file sizes are read from `performance.getEntriesByType('resource')` — no extra network request needed.
 
 **AI checks are toggle-gated and cached**
-Heading and img-alt runs only after **Sniff page** when each **AI Check** toggle is on (defaults off). Successful responses are cached in the panel for that sniff so toggling off/on does not call the API again until a new sniff, Clear, or navigation.
+Heading and img-alt checks only run after Sniff page when each AI Check toggle is on (defaults off). Successful responses are cached for that sniff so toggling off/on does not call the API again until a new sniff, Clear, or navigation.

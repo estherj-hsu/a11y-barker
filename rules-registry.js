@@ -20,6 +20,14 @@ window.A11Y_BARKER_RULES = {
     description: 'Interactive elements must have an accessible name.',
     helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/name-role-value',
   },
+  'label-in-name': {
+    label: 'Label in Name',
+    wcag: '2.5.3',
+    level: 'AA',
+    impact: 'moderate',
+    description: 'The accessible name of an interactive element must contain its visible label text so voice input users can activate it.',
+    helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/label-in-name',
+  },
   'tabindex-positive': {
     label: 'Positive Tabindex',
     wcag: '2.4.3',

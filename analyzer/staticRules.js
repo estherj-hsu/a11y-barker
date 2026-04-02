@@ -1,6 +1,6 @@
 /**
  * Filename: analyzer/staticRules.js
- * Purpose: Static accessibility rule checks — missing alt, empty controls, tabindex, landmarks, headings, labels, links, focus.
+ * Purpose: Static accessibility rule checks — missing alt, empty controls, label-in-name, tabindex, landmarks, headings, labels, links, focus.
  */
 (function () {
   const LANDMARK_ROLES_LIST = ['banner', 'main', 'complementary', 'contentinfo', 'form', 'navigation', 'region', 'search'];
@@ -58,6 +58,80 @@
         const label = tag === 'button' || role === 'button' ? 'button' : 'link';
         issues.push({ rule: 'empty-control', message: 'Empty ' + label, el });
       }
+    });
+    return issues;
+  }
+
+  /**
+   * Returns true if el or any ancestor up to boundary (exclusive) has aria-hidden="true".
+   * @param {Node} el
+   * @param {Element} boundary
+   * @returns {boolean}
+   */
+  function hasAriaHiddenAncestor(el, boundary) {
+    let n = el.nodeType === Node.TEXT_NODE ? el.parentNode : el;
+    while (n && n !== boundary) {
+      if (n.nodeType === Node.ELEMENT_NODE && n.getAttribute && n.getAttribute('aria-hidden') === 'true') {
+        return true;
+      }
+      n = n.parentNode;
+    }
+    return !!(boundary && boundary.getAttribute && boundary.getAttribute('aria-hidden') === 'true');
+  }
+
+  /**
+   * Visible label text: TEXT_NODE descendants only; skip aria-hidden subtrees; skip entire SVG subtrees.
+   * @param {Element} root
+   * @returns {string}
+   */
+  function collectVisibleTextForLabelInName(root) {
+    const chunks = [];
+    function walk(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (!hasAriaHiddenAncestor(node, root)) {
+          chunks.push(node.textContent);
+        }
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      const tag = (node.tagName || '').toLowerCase();
+      if (tag === 'svg') return;
+      if (node.getAttribute && node.getAttribute('aria-hidden') === 'true') return;
+      if (hasAriaHiddenAncestor(node, root)) return;
+      for (let i = 0; i < node.childNodes.length; i++) {
+        walk(node.childNodes[i]);
+      }
+    }
+    for (let i = 0; i < root.childNodes.length; i++) {
+      walk(root.childNodes[i]);
+    }
+    return chunks.join('').replace(/\s+/g, ' ').trim();
+  }
+
+  /**
+   * WCAG 2.5.3: Accessible name must contain visible label text (voice input).
+   * @param {Document} doc
+   * @returns {Array<{rule: string, message: string, el: Element}>}
+   */
+  function checkLabelInName(doc) {
+    doc = doc || document;
+    const issues = [];
+    const selector =
+      'button, a[href], input[type="submit"], input[type="button"], input[type="reset"], [role="button"], [role="link"]';
+    doc.querySelectorAll(selector).forEach((el) => {
+      const visibleText = collectVisibleTextForLabelInName(el);
+      if (!visibleText) return;
+      const getName = window.getAccessibleName;
+      const rawName = getName ? getName(el, doc) : el.getAttribute('aria-label') || '';
+      const accessibleName = (rawName || '').replace(/\s+/g, ' ').trim();
+      if (!accessibleName) return;
+      if (accessibleName.toLowerCase().includes(visibleText.toLowerCase())) return;
+      issues.push({
+        rule: 'label-in-name',
+        message:
+          'Accessible name "' + accessibleName + '" does not contain visible text "' + visibleText + '"',
+        el,
+      });
     });
     return issues;
   }
@@ -282,6 +356,7 @@
     issues.push(...checkLang(doc));
     issues.push(...checkImages(doc));
     issues.push(...checkEmptyControls(doc));
+    issues.push(...checkLabelInName(doc));
     issues.push(...checkTabindex(doc));
     issues.push(...detectDuplicateLandmarks(doc));
     issues.push(...checkHeadings(doc));

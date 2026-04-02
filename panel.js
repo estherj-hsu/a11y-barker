@@ -9,11 +9,16 @@ const ARIA_HIDDEN_KEY = 'a11yBarkerAriaHidden';
 const ISSUES_PANEL_KEY = 'a11yBarkerIssuesPanel';
 const AI_HEADING_KEY = 'a11yBarkerAiHeading';
 const AI_ALT_KEY = 'a11yBarkerAiImgAlt';
+const AI_MODEL_KEY = 'a11yBarkerAiModel';
+/** Default: faster / cheaper. User can switch to Sonnet in the panel for higher accuracy. */
+const AI_MODEL_HAIKU = 'claude-haiku-4-5-20251001';
+const AI_MODEL_SONNET = 'claude-sonnet-4-5-20251022';
+const AI_MODEL_DEFAULT = AI_MODEL_HAIKU;
 const THEME_KEY = 'a11yBarkerTheme';
 
 const AI_KEYS = [
   [AI_HEADING_KEY, 'Heading structure'],
-  [AI_ALT_KEY, 'Img alt'],
+  [AI_ALT_KEY, 'Images alt'],
 ];
 
 /** When storage has no value yet, AI toggles are off (opt-in). */
@@ -22,6 +27,9 @@ const AI_TOGGLE_DEFAULT = false;
 /** Set when background reports a non-empty Anthropic key in config.js */
 let _panelHasAiApiKey = false;
 
+/** Effective default when storage has no `a11yBarkerAiModel` (from config.js via background). */
+let _panelDefaultAiModel = AI_MODEL_DEFAULT;
+
 /** Last successful AI response text per check; cleared on new sniff / clear / navigation. */
 let _cachedAltAiRaw = null;
 let _cachedHeadingAiRaw = null;
@@ -29,6 +37,41 @@ let _cachedHeadingAiRaw = null;
 function clearAiResultCaches() {
   _cachedAltAiRaw = null;
   _cachedHeadingAiRaw = null;
+}
+
+/** Shows the Claude model radios only when at least one AI Check toggle is on. */
+function updateAiModelRowVisibility() {
+  if (_extInvalidated) return;
+  const wrap = document.getElementById('ai-model-wrap');
+  if (!wrap) return;
+  if (!_panelHasAiApiKey) {
+    wrap.style.display = 'none';
+    return;
+  }
+  try {
+    chrome.storage.local.get([AI_HEADING_KEY, AI_ALT_KEY], (data) => {
+      if (_extInvalidated) return;
+      const headingOn = data[AI_HEADING_KEY] !== undefined ? !!data[AI_HEADING_KEY] : AI_TOGGLE_DEFAULT;
+      const imgAltOn = data[AI_ALT_KEY] !== undefined ? !!data[AI_ALT_KEY] : AI_TOGGLE_DEFAULT;
+      wrap.style.display = headingOn || imgAltOn ? '' : 'none';
+    });
+  } catch (_) {
+    _extInvalidated = true;
+    showInvalidatedBanner();
+  }
+}
+
+/** Shown below AI model when Anthropic rejects the API key (401/403 / auth error). */
+function setAiKeyErrorBanner(message) {
+  const el = document.getElementById('ai-key-error');
+  if (!el) return;
+  if (!message) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  el.hidden = false;
+  el.textContent = message;
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +149,7 @@ const KEYS = [
   [ISSUES_PANEL_KEY, 'Issues'],
 ];
 
-const WARN_RULES = new Set(['tabindex-positive', 'duplicate-landmark', 'image-large', 'heading-skip', 'link-ambiguous', 'focus-visible']);
+const WARN_RULES = new Set(['tabindex-positive', 'duplicate-landmark', 'image-large', 'heading-skip', 'link-ambiguous', 'focus-visible', 'label-in-name']);
 
 function getTabId() {
   if (_extInvalidated) return null;
@@ -220,16 +263,20 @@ function runAiHeadingAnalysis() {
     if (_extInvalidated) return;
     const inner = res?.response ?? res;
     if (inner?.ok) {
+      setAiKeyErrorBanner(null);
       _cachedHeadingAiRaw = inner.result;
       applyAiResultHtml(resultEl, inner.result, 'heading');
     } else {
+      if (inner?.aiAuthError) {
+        setAiKeyErrorBanner(inner?.error || res?.error || 'API key rejected');
+      }
       resultEl.textContent = inner?.error || res?.error || 'Analysis failed';
     }
   });
 }
 
 /**
- * Shows or hides the post-scan Img alt result block based on API key, Img alt toggle, and scan state.
+ * Shows or hides the post-scan Images alt result block based on API key, Images alt toggle, and scan state.
  * @param {{ runAnalysis?: boolean }} [options] — if `runAnalysis`, runs Claude alt check when the section should be visible.
  */
 function updateAiAltUiVisibility(options) {
@@ -277,10 +324,53 @@ function runAiAltAnalysis() {
     if (_extInvalidated) return;
     const inner = res?.response ?? res;
     if (inner?.ok) {
+      setAiKeyErrorBanner(null);
       _cachedAltAiRaw = inner.result;
       applyAiResultHtml(resultEl, inner.result, 'alt');
     } else {
+      if (inner?.aiAuthError) {
+        setAiKeyErrorBanner(inner?.error || res?.error || 'API key rejected');
+      }
       resultEl.textContent = inner?.error || res?.error || 'Analysis failed';
+    }
+  });
+}
+
+function initAiModelRadios() {
+  if (_extInvalidated) return;
+  const haiku = document.getElementById('ai-model-haiku');
+  const sonnet = document.getElementById('ai-model-sonnet');
+  const group = document.getElementById('ai-model-radio-group');
+  if (!haiku || !sonnet || !group) return;
+  try {
+    chrome.storage.local.get([AI_MODEL_KEY], (data) => {
+      if (_extInvalidated) return;
+      const v = data[AI_MODEL_KEY] !== undefined ? data[AI_MODEL_KEY] : _panelDefaultAiModel;
+      if (v === AI_MODEL_SONNET) {
+        sonnet.checked = true;
+        haiku.checked = false;
+      } else {
+        haiku.checked = true;
+        sonnet.checked = false;
+      }
+    });
+  } catch (_) {
+    _extInvalidated = true;
+    showInvalidatedBanner();
+    return;
+  }
+  if (group.dataset.bound === '1') return;
+  group.dataset.bound = '1';
+  group.addEventListener('change', (e) => {
+    if (_extInvalidated) return;
+    const t = e.target;
+    if (t?.name !== 'ai-model') return;
+    const next = t.value === AI_MODEL_SONNET ? AI_MODEL_SONNET : AI_MODEL_HAIKU;
+    try {
+      chrome.storage.local.set({ [AI_MODEL_KEY]: next });
+    } catch (_) {
+      _extInvalidated = true;
+      showInvalidatedBanner();
     }
   });
 }
@@ -306,6 +396,7 @@ function renderAiToggles() {
           try {
             chrome.storage.local.set({ [key]: next }, () => {
               if (_extInvalidated) return;
+              updateAiModelRowVisibility();
               const scanned = document.getElementById('scan-btn')?.dataset.state === 'clear';
               if (key === AI_ALT_KEY && next && scanned) {
                 updateAiAltUiVisibility({ runAnalysis: true });
@@ -324,6 +415,7 @@ function renderAiToggles() {
         });
         container.appendChild(row);
       });
+      updateAiModelRowVisibility();
     });
   } catch (_) {
     _extInvalidated = true;
@@ -342,17 +434,25 @@ function refreshAiCheckSection() {
         if (chrome.runtime?.lastError || !section) {
           _panelHasAiApiKey = false;
           if (section) section.style.display = 'none';
+          setAiKeyErrorBanner(null);
           updateAiAltUiVisibility();
           updateAiHeadingUiVisibility();
           return;
         }
         const hasApiKey = !!(res?.ok && res?.hasApiKey);
         _panelHasAiApiKey = hasApiKey;
+        if (res?.defaultModel === AI_MODEL_SONNET) {
+          _panelDefaultAiModel = AI_MODEL_SONNET;
+        } else {
+          _panelDefaultAiModel = AI_MODEL_HAIKU;
+        }
         if (hasApiKey) {
           section.style.display = '';
           renderAiToggles();
+          initAiModelRadios();
         } else {
           section.style.display = 'none';
+          setAiKeyErrorBanner(null);
         }
         updateAiAltUiVisibility();
         updateAiHeadingUiVisibility();
@@ -619,6 +719,7 @@ document.getElementById('scan-btn').addEventListener('click', () => {
   const btn = document.getElementById('scan-btn');
   if (btn.dataset.state !== 'clear') {
     clearAiResultCaches();
+    setAiKeyErrorBanner(null);
     btn.innerHTML = ICON_LOADER + 'Sniffing…';
     btn.dataset.state = 'scanning';
     btn.classList.add('scanning');
@@ -659,6 +760,7 @@ document.getElementById('scan-btn').addEventListener('click', () => {
         const headingResult = document.getElementById('heading-check-result');
         if (headingResult) headingResult.textContent = '';
         clearAiResultCaches();
+        setAiKeyErrorBanner(null);
         updateAiAltUiVisibility();
         updateAiHeadingUiVisibility();
       }
@@ -838,6 +940,12 @@ chrome.storage.onChanged.addListener((changes) => {
       updateAiAltUiVisibility();
       updateAiHeadingUiVisibility();
     }
+    if (changes[AI_MODEL_KEY]) {
+      initAiModelRadios();
+      clearAiResultCaches();
+      updateAiAltUiVisibility({ runAnalysis: true });
+      updateAiHeadingUiVisibility({ runAnalysis: true });
+    }
     if (changes[TAB_KEY] || changes[SR_KEY] || changes[HEADING_KEY] || changes[ARIA_HIDDEN_KEY] || changes[ISSUES_PANEL_KEY]) {
       renderToggles();
       if (changes[ISSUES_PANEL_KEY]) {
@@ -892,6 +1000,7 @@ function reinitPanel() {
   const headingResult = document.getElementById('heading-check-result');
   if (headingResult) headingResult.textContent = '';
   clearAiResultCaches();
+  setAiKeyErrorBanner(null);
   updateAiAltUiVisibility();
   updateAiHeadingUiVisibility();
   sendToPage({ action: 'clear' });
