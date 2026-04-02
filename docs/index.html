@@ -498,6 +498,103 @@
     }
 
     .social-btn svg { width: 16px; height: 16px; fill: white; }
+
+    /* ── A11y Barker demo notice (real overlay — not part of intentional issues) ── */
+    /*
+      Closed <dialog> must not get author `display: flex` — it overrides UA `display: none`,
+      so the overlay stayed on screen after close() even though dialog.open was false.
+    */
+    .demo-notice-dialog:not([open]) {
+      display: none;
+    }
+
+    .demo-notice-dialog[open] {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      max-width: none;
+      max-height: none;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 32px 24px;
+      border: none;
+      background: rgba(44, 26, 14, 0.94);
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .demo-notice-dialog::backdrop {
+      background: rgba(44, 26, 14, 0.2);
+    }
+
+    .demo-notice-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    .demo-notice-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 4vw, 36px);
+      line-height: 1.25;
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .demo-notice-inner p {
+      font-size: 17px;
+      line-height: 1.65;
+      color: rgba(253, 246, 238, 0.88);
+      margin-bottom: 20px;
+    }
+
+    .demo-notice-inner a.repo-link {
+      display: inline-block;
+      color: var(--accent);
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .demo-notice-inner a.repo-link:hover {
+      color: #e87a45;
+    }
+
+    .demo-notice-actions {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .demo-notice-dismiss {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 32px;
+      font-size: 16px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .demo-notice-dismiss:hover {
+      filter: brightness(1.08);
+    }
+
+    .demo-notice-dismiss:focus-visible {
+      outline: 2px solid white;
+      outline-offset: 3px;
+    }
   </style>
 </head>
 <body>
@@ -821,6 +918,39 @@
       </div>
     </div>
   </footer>
+
+  <dialog id="a11y-demo-notice" class="demo-notice-dialog" aria-labelledby="demo-notice-title">
+    <div class="demo-notice-inner">
+      <h2 id="demo-notice-title">Demo page for A11y Barker</h2>
+      <p>
+        This Paw Pals site is a <strong>demo for A11y Barker</strong>, a Chrome DevTools extension that visualizes accessibility on any webpage. The content below is intentionally built with accessibility issues so you can try overlays, static rules, and optional AI checks in the extension.
+      </p>
+      <p>
+        <a href="https://github.com/estherj-hsu/a11y-barker" class="repo-link" target="_blank" rel="noopener noreferrer">github.com/estherj-hsu/a11y-barker</a>
+      </p>
+      <div class="demo-notice-actions">
+        <button type="button" class="demo-notice-dismiss" id="demo-notice-close">Continue to demo</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (function () {
+      var el = document.getElementById('a11y-demo-notice');
+      var btn = document.getElementById('demo-notice-close');
+      if (!el || typeof el.showModal !== 'function') return;
+
+      el.showModal();
+
+      if (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          el.close();
+        });
+      }
+    })();
+  </script>
 
 </body>
 </html>
