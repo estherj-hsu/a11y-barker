@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paw Pals — Find Your Dog's Next Best Friend</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #fdf6ee;
+      --warm: #f5e6d0;
+      --brown: #8b4a1c;
+      --dark: #2c1a0e;
+      --muted: #b89a7a;
+      --accent: #d4622a;
+      --green: #4a7c59;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--dark);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* ── Nav ── */
+    /* intentional: no aria-label on nav */
+    nav.main-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: var(--cream);
+      border-bottom: 1px solid var(--warm);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--brown);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--dark);
+      font-size: 15px;
+      font-weight: 500;
+      /* intentional: focus outline removed, no alternative */
+      outline: none;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    .nav-cta {
+      background: var(--accent);
+      color: white;
+      padding: 10px 22px;
+      border-radius: 24px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 15px;
+      outline: none; /* intentional */
+    }
+
+    /* ── Hero ── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 88vh;
+      overflow: hidden;
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 64px;
+      gap: 24px;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--warm);
+      color: var(--brown);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      width: fit-content;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(40px, 5vw, 64px);
+      line-height: 1.15;
+      color: var(--dark);
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--brown);
+    }
+
+    /* intentional: low contrast — --muted on --cream */
+    .hero-sub {
+      color: var(--muted);
+      font-size: 18px;
+      max-width: 420px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      padding: 14px 32px;
+      border-radius: 32px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      outline: none; /* intentional */
+    }
+
+    .btn-secondary {
+      color: var(--brown);
+      font-size: 15px;
+      text-decoration: underline;
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none; /* intentional */
+    }
+
+    .hero-image {
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* intentional: no alt on hero img */
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-stats {
+      position: absolute;
+      bottom: 32px;
+      left: 32px;
+      background: white;
+      border-radius: var(--radius);
+      padding: 16px 24px;
+      display: flex;
+      gap: 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    .stat-item { text-align: center; }
+
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      color: var(--accent);
+      display: block;
+    }
+
+    /* intentional: low contrast */
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Search ── */
+    .search-section {
+      background: var(--dark);
+      padding: 40px 48px;
+    }
+
+    /* intentional: h3 with no preceding h2 (level skip from h1) */
+    .search-section h3 {
+      font-family: 'Playfair Display', serif;
+      color: white;
+      font-size: 28px;
+      margin-bottom: 24px;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* intentional: inputs with no label */
+    .search-bar input,
+    .search-bar select {
+      flex: 1;
+      min-width: 180px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    .search-bar input::placeholder { color: rgba(255,255,255,0.5); }
+    .search-bar select option { color: var(--dark); background: white; }
+
+    .search-bar button {
+      background: var(--accent);
+      color: white;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      outline: none; /* intentional */
+    }
+
+    /* ── Dogs grid ── */
+    .dogs-section { padding: 80px 48px; }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 40px;
+    }
+
+    .section-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+    }
+
+    .section-header a { color: var(--accent); text-decoration: none; font-size: 15px; }
+
+    .dogs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 28px;
+    }
+
+    .dog-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .dog-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    .dog-card img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+    }
+
+    .dog-card-body { padding: 20px; }
+
+    .dog-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+
+    /* intentional: low contrast on white */
+    .dog-meta { color: #c4a882; font-size: 14px; margin-bottom: 12px; }
+
+    .dog-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+
+    .tag {
+      background: var(--warm);
+      color: var(--brown);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .dog-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* intentional: repeated "Read more" links */
+    .dog-card-footer a { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 500; }
+
+    /* intentional: icon-only button with no accessible name */
+    .btn-heart {
+      background: none;
+      border: 1px solid var(--warm);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none; /* intentional */
+    }
+
+    .btn-heart svg { width: 16px; height: 16px; }
+
+    /* ── Featured ── */
+    .featured-section {
+      background: var(--dark);
+      padding: 80px 48px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .featured-image { border-radius: 20px; overflow: hidden; aspect-ratio: 1; }
+    .featured-image img { width: 100%; height: 100%; object-fit: cover; }
+    .featured-text { color: white; }
+
+    .featured-text .hero-tag {
+      background: rgba(255,255,255,0.1);
+      color: var(--warm);
+    }
+
+    .featured-text h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      margin: 16px 0;
+      line-height: 1.2;
+    }
+
+    .featured-text p { color: rgba(255,255,255,0.7); font-size: 17px; margin-bottom: 24px; }
+
+    .featured-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .detail-item { background: rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; }
+
+    .detail-label {
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .detail-value { color: white; font-weight: 500; }
+
+    /* ── Events ── */
+    .events-section { padding: 80px 48px; }
+
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .event-card { border: 1px solid var(--warm); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
+    .event-img { width: 100%; height: 200px; object-fit: cover; }
+    .event-body { padding: 24px; flex: 1; }
+    .event-date { color: var(--accent); font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+
+    .event-card h3 { font-family: 'Playfair Display', serif; font-size: 20px; }
+
+    /* intentional: tabindex=5 disrupts focus order */
+    .event-join {
+      display: block;
+      margin: 0 24px 24px;
+      background: var(--green);
+      color: white;
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      outline: none; /* intentional */
+    }
+
+    /* ── Sign up ── */
+    .signup-section {
+      background: var(--warm);
+      padding: 80px 48px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .signup-text h2 { font-family: 'Playfair Display', serif; font-size: 40px; margin-bottom: 16px; }
+    .signup-text p { color: var(--muted); font-size: 17px; }
+
+    .signup-form { display: flex; flex-direction: column; gap: 16px; }
+
+    /* intentional: inputs with no label */
+    .signup-form input {
+      padding: 14px 18px;
+      border: 1px solid rgba(139,74,28,0.2);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      background: white;
+    }
+
+    .signup-form input:focus { outline: none; } /* intentional */
+
+    /* intentional: tabindex=5 on submit */
+    .signup-form button[type="submit"] {
+      background: var(--accent);
+      color: white;
+      padding: 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      outline: none; /* intentional */
+    }
+
+    /* ── Footer ── */
+    /* intentional: second nav no aria-label */
+    footer { background: var(--dark); color: white; padding: 48px; }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 48px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand .nav-logo { color: var(--warm); }
+    .footer-brand p { color: rgba(255,255,255,0.5); font-size: 14px; margin-top: 8px; max-width: 240px; }
+
+    .footer-links h4 { color: var(--warm); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+    .footer-links ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-bottom p { color: rgba(255,255,255,0.4); font-size: 13px; }
+
+    .social-links { display: flex; gap: 12px; }
+
+    /* intentional: icon-only buttons with no accessible name */
+    .social-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      outline: none; /* intentional */
+    }
+
+    .social-btn svg { width: 16px; height: 16px; fill: white; }
+
+    /* ── A11y Barker demo notice (real overlay — not part of intentional issues) ── */
+    /*
+      Closed <dialog> must not get author `display: flex` — it overrides UA `display: none`,
+      so the overlay stayed on screen after close() even though dialog.open was false.
+    */
+    .demo-notice-dialog:not([open]) {
+      display: none;
+    }
+
+    .demo-notice-dialog[open] {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      max-width: none;
+      max-height: none;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 32px 24px;
+      border: none;
+      background: rgba(44, 26, 14, 0.94);
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .demo-notice-dialog::backdrop {
+      background: rgba(44, 26, 14, 0.2);
+    }
+
+    .demo-notice-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    .demo-notice-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 4vw, 36px);
+      line-height: 1.25;
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .demo-notice-inner p {
+      font-size: 17px;
+      line-height: 1.65;
+      color: rgba(253, 246, 238, 0.88);
+      margin-bottom: 20px;
+    }
+
+    .demo-notice-inner a.repo-link {
+      display: inline-block;
+      color: var(--accent);
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .demo-notice-inner a.repo-link:hover {
+      color: #e87a45;
+    }
+
+    .demo-notice-actions {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .demo-notice-dismiss {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 32px;
+      font-size: 16px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .demo-notice-dismiss:hover {
+      filter: brightness(1.08);
+    }
+
+    .demo-notice-dismiss:focus-visible {
+      outline: 2px solid white;
+      outline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- intentional: no aria-label on main nav -->
+  <nav class="main-nav">
+    <a class="nav-logo" href="#">Paw Pals</a>
+    <ul class="nav-links">
+      <li><a href="#">Find a Pal</a></li>
+      <li><a href="#">Events</a></li>
+      <li><a href="#">Success Stories</a></li>
+      <li><a href="#">About</a></li>
+    </ul>
+    <a class="nav-cta" href="#">Join Free</a>
+  </nav>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-text">
+        <span class="hero-tag">🐾 Vancouver's #1 Dog Social Network</span>
+        <h1>Where good dogs find <em>great friends</em></h1>
+        <p class="hero-sub">Connect your pup with compatible playmates, join local meetups, and build a community of fellow dog lovers.</p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="#">Find a Playmate</a>
+          <button class="btn-secondary">Watch how it works</button>
+        </div>
+      </div>
+      <div class="hero-image">
+        <!-- intentional: missing alt -->
+        <img src="hero.jpg">
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-num">2.4k</span>
+            <span class="stat-label">Active pups</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">840</span>
+            <span class="stat-label">Matches made</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">120+</span>
+            <span class="stat-label">Monthly events</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search -->
+    <section class="search-section">
+      <!-- intentional: h3 with no preceding h2 — skips from h1 -->
+      <h3>Find your dog's perfect match</h3>
+      <div class="search-bar">
+        <!-- intentional: all inputs missing labels -->
+        <input type="text" placeholder="Neighbourhood (e.g. Kitsilano)">
+        <select>
+          <option>Any breed</option>
+          <option>Golden Retriever</option>
+          <option>Labrador</option>
+          <option>Poodle</option>
+          <option>Border Collie</option>
+        </select>
+        <select>
+          <option>Any size</option>
+          <option>Small</option>
+          <option>Medium</option>
+          <option>Large</option>
+        </select>
+        <select>
+          <option>Any energy level</option>
+          <option>Mellow</option>
+          <option>Moderate</option>
+          <option>High energy</option>
+        </select>
+        <button>Search</button>
+      </div>
+    </section>
+
+    <!-- Dogs grid -->
+    <section class="dogs-section">
+      <div class="section-header">
+        <h2>Dogs near you</h2>
+        <!-- intentional: ambiguous link text -->
+        <a href="#">Read more</a>
+      </div>
+      <div class="dogs-grid">
+
+        <div class="dog-card">
+          <!-- intentional: generic alt -->
+          <img src="tifa.jpg" alt="dog photo">
+          <div class="dog-card-body">
+            <div class="dog-name">Tifa</div>
+            <div class="dog-meta">Field Golden Retriever · 5 years · Female</div>
+            <div class="dog-tags">
+              <span class="tag">Gentle</span>
+              <span class="tag">Playful</span>
+              <span class="tag">Kitsilano</span>
+            </div>
+            <div class="dog-card-footer">
+              <!-- intentional: repeated ambiguous link -->
+              <a href="#">Read more</a>
+              <!-- intentional: icon-only button, no accessible name -->
+              <button class="btn-heart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#8b4a1c" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dog-card">
+          <!-- intentional: missing alt -->
+          <img src="tifa.jpg">
+          <div class="dog-card-body">
+            <div class="dog-name">Biscuit</div>
+            <div class="dog-meta">Labrador Mix · 3 years · Male</div>
+            <div class="dog-tags">
+              <span class="tag">High energy</span>
+              <span class="tag">Fetch lover</span>
+              <span class="tag">Mount Pleasant</span>
+            </div>
+            <div class="dog-card-footer">
+              <a href="#">Read more</a>
+              <button class="btn-heart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#8b4a1c" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dog-card">
+          <img src="tifa.jpg" alt="dog photo">
+          <div class="dog-card-body">
+            <div class="dog-name">Mochi</div>
+            <div class="dog-meta">Shiba Inu · 2 years · Female</div>
+            <div class="dog-tags">
+              <span class="tag">Independent</span>
+              <span class="tag">Curious</span>
+              <span class="tag">Yaletown</span>
+            </div>
+            <div class="dog-card-footer">
+              <a href="#">Read more</a>
+              <button class="btn-heart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#8b4a1c" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dog-card">
+          <img src="tifa.jpg" alt="dog photo">
+          <div class="dog-card-body">
+            <div class="dog-name">Maple</div>
+            <div class="dog-meta">Border Collie · 4 years · Female</div>
+            <div class="dog-tags">
+              <span class="tag">Smart</span>
+              <span class="tag">Active</span>
+              <span class="tag">Commercial Dr</span>
+            </div>
+            <div class="dog-card-footer">
+              <a href="#">Read more</a>
+              <button class="btn-heart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#8b4a1c" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Featured: Tifa -->
+    <section class="featured-section">
+      <div class="featured-image">
+        <!-- intentional: generic alt -->
+        <img src="tifa.jpg" alt="dog photo">
+      </div>
+      <div class="featured-text">
+        <span class="hero-tag">⭐ Member Spotlight</span>
+        <h2>Meet Tifa</h2>
+        <p>Tifa is a 5-year-old Field Golden Retriever based in Kitsilano. She loves long walks on the seawall, playing fetch, and meeting new friends at the dog park.</p>
+        <div class="featured-details">
+          <div class="detail-item">
+            <span class="detail-label">Breed</span>
+            <span class="detail-value">Field Golden Retriever</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Age</span>
+            <span class="detail-value">5 years</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Energy</span>
+            <span class="detail-value">Moderate–High</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Neighbourhood</span>
+            <span class="detail-value">Kitsilano, Vancouver</span>
+          </div>
+        </div>
+        <a class="btn-primary" href="#">Send a woof</a>
+      </div>
+    </section>
+
+    <!-- Events -->
+    <section class="events-section">
+      <div class="section-header">
+        <h2>Upcoming Meetups</h2>
+        <!-- intentional: repeated ambiguous link -->
+        <a href="#">Read more</a>
+      </div>
+      <div class="events-grid">
+
+        <div class="event-card">
+          <img class="event-img" src="think.jpg" alt="dog photo">
+          <div class="event-body">
+            <div class="event-date">Sat, Apr 12 · 10:00 AM</div>
+            <h3>Kits Beach Off-Leash Morning</h3>
+            <p style="font-size:14px; color:#666; margin-top:8px;">Join us for a casual morning run at Kits Beach off-leash area. All sizes welcome!</p>
+          </div>
+          <!-- intentional: tabindex=5 disrupts natural focus order -->
+          <a class="event-join" href="#" tabindex="5">Join Meetup</a>
+        </div>
+
+        <div class="event-card">
+          <img class="event-img" src="think.jpg" alt="dog photo">
+          <div class="event-body">
+            <div class="event-date">Sun, Apr 20 · 2:00 PM</div>
+            <h3>Stanley Park Trail Walk</h3>
+            <p style="font-size:14px; color:#666; margin-top:8px;">A guided group walk through the Stanley Park trails. Bring water and treats!</p>
+          </div>
+          <a class="event-join" href="#" tabindex="5">Join Meetup</a>
+        </div>
+
+        <div class="event-card">
+          <img class="event-img" src="think.jpg" alt="dog photo">
+          <div class="event-body">
+            <div class="event-date">Sat, Apr 26 · 11:00 AM</div>
+            <h3>Paw Pals Birthday Bash 🎂</h3>
+            <p style="font-size:14px; color:#666; margin-top:8px;">Celebrate our community's first anniversary! Puppy-safe cake and prizes.</p>
+          </div>
+          <a class="event-join" href="#" tabindex="5">Join Meetup</a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Sign up -->
+    <section class="signup-section">
+      <div class="signup-text">
+        <h2>Create your dog's profile</h2>
+        <p>Join thousands of dog owners in Vancouver and find your pup's next best friend today.</p>
+      </div>
+      <form class="signup-form">
+        <!-- intentional: all inputs missing labels -->
+        <input type="text" placeholder="Your name">
+        <input type="email" placeholder="Email address">
+        <input type="text" placeholder="Your dog's name">
+        <input type="password" placeholder="Password">
+        <!-- intentional: tabindex=5 on submit disrupts order -->
+        <button type="submit" tabindex="5">Create Free Account</button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- intentional: footer nav has no aria-label -->
+  <footer>
+    <nav>
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <a class="nav-logo" href="#">Paw Pals</a>
+          <p>Connecting dogs and their humans across Vancouver since 2024.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Explore</h4>
+          <ul>
+            <li><a href="#">Find a Pal</a></li>
+            <li><a href="#">Events</a></li>
+            <li><a href="#">Success Stories</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Account</h4>
+          <ul>
+            <li><a href="#">Sign Up</a></li>
+            <li><a href="#">Log In</a></li>
+            <li><a href="#">Settings</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="footer-bottom">
+      <p>© 2025 Paw Pals. All rights reserved.</p>
+      <div class="social-links">
+        <!-- intentional: icon-only buttons, no accessible name -->
+        <button class="social-btn">
+          <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </button>
+        <button class="social-btn">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+        </button>
+        <button class="social-btn">
+          <svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.78a4.85 4.85 0 0 1-1.01-.09z"/></svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <dialog id="a11y-demo-notice" class="demo-notice-dialog" aria-labelledby="demo-notice-title">
+    <div class="demo-notice-inner">
+      <h2 id="demo-notice-title">Demo page for A11y Barker</h2>
+      <p>
+        This Paw Pals site is a <strong>demo for A11y Barker</strong>, a Chrome DevTools extension that visualizes accessibility on any webpage. The content below is intentionally built with accessibility issues so you can try overlays, static rules, and optional AI checks in the extension.
+      </p>
+      <p>
+        <a href="https://github.com/estherj-hsu/a11y-barker" class="repo-link" target="_blank" rel="noopener noreferrer">github.com/estherj-hsu/a11y-barker</a>
+      </p>
+      <div class="demo-notice-actions">
+        <button type="button" class="demo-notice-dismiss" id="demo-notice-close">Continue to demo</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (function () {
+      var el = document.getElementById('a11y-demo-notice');
+      var btn = document.getElementById('demo-notice-close');
+      if (!el || typeof el.showModal !== 'function') return;
+
+      el.showModal();
+
+      if (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          el.close();
+        });
+      }
+    })();
+  </script>
+
+</body>
+</html>

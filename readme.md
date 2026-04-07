@@ -10,7 +10,7 @@ A Chrome DevTools extension for visualizing accessibility on any webpage.
 
 ## Demo
 
-Try it on the [Paw Pals demo page](https://estherh.dev/a11y-barker) — a intentionally inaccessible dog social network built to showcase what A11y Barker catches.
+Try it on the [Paw Pals demo page](https://estherh.dev/a11y-barker/demo.html) — a intentionally inaccessible dog social network built to showcase what A11y Barker catches.
 
 ---
 
@@ -129,6 +129,9 @@ a11y-barker/
 │   ├── altChecker.js           # Images + JSON prompt for alt-text review
 │   └── headingChecker.js       # Headings + JSON prompt for structure review
 ├── docs/
+│   ├── index.html              # Project landing page (SEO)
+│   ├── demo.html               # Paw Pals intentionally broken demo
+│   ├── og.png                  # Open Graph / social preview image
 │   └── screenshot.png          # Panel screenshot
 └── assets/
     └── dog/                    # Barker icon assets
