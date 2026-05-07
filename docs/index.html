@@ -3,417 +3,892 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="A11y Barker is a free Chrome DevTools extension that visualizes accessibility on any webpage: tab order, screen reader labels, headings, WCAG checks, and optional Claude AI reviews.">
-  <meta name="keywords" content="accessibility, a11y, Chrome extension, DevTools, WCAG, WCAG 2, screen reader, tab order, color contrast, alt text, Chrome DevTools extension">
-  <meta name="author" content="Esther Hsu">
-  <meta name="robots" content="index, follow">
-  <meta name="theme-color" content="#2c1a0e">
-
   <title>A11y Barker — Accessibility visualizer for Chrome DevTools</title>
-
-  <link rel="canonical" href="https://estherh.dev/a11y-barker/">
-  <link rel="icon" type="image/png" sizes="32x32" href="favico.png">
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://estherh.dev/a11y-barker/">
-  <meta property="og:title" content="A11y Barker — Accessibility visualizer for Chrome DevTools">
-  <meta property="og:description" content="Visualize accessibility on any webpage from Chrome DevTools: overlays for tab order and headings, WCAG rule checks, SPA-aware updates, and optional AI-powered reviews.">
-  <meta property="og:image" content="https://estherh.dev/a11y-barker/og.png">
-  <meta property="og:image:alt" content="A11y Barker logo and tagline: Accessibility visualizer for Chrome DevTools">
-  <meta property="og:locale" content="en_US">
-  <meta property="og:site_name" content="A11y Barker">
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="A11y Barker — Accessibility visualizer for Chrome DevTools">
-  <meta name="twitter:description" content="Visualize accessibility on any webpage from Chrome DevTools: overlays, WCAG checks, and optional AI reviews.">
-  <meta name="twitter:image" content="https://estherh.dev/a11y-barker/og.png">
-
+  <link rel="icon" type="image/png" href="favico.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Ravi+Prakash&display=swap" rel="stylesheet">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "A11y Barker",
-    "description": "Chrome DevTools extension for visualizing accessibility on webpages: tab order, screen reader content, heading structure, WCAG static rules, and optional Anthropic Claude AI checks.",
-    "applicationCategory": "DeveloperApplication",
-    "operatingSystem": "Chrome",
-    "browserRequirements": "Requires Chromium-based browser with Manifest V3 extension support",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "url": "https://estherh.dev/a11y-barker/",
-    "codeRepository": "https://github.com/estherj-hsu/a11y-barker",
-    "author": {
-      "@type": "Person",
-      "name": "Esther Hsu"
-    }
-  }
-  </script>
-
+  <link href="https://fonts.googleapis.com/css2?family=Ravi+Prakash&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --cream: #fdf6ee;
-      --warm: #f5e6d0;
-      --brown: #8b4a1c;
-      --dark: #2c1a0e;
-      --muted: #6b5a4a;
-      --accent: #bf5724;
-      --green: #4a7c59;
-      --radius: 12px;
-      --font-display: 'Ravi Prakash', Georgia, serif;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --max: 720px;
-      --max-wide: 960px;
+      --bone:        #f4efe6;
+      --bone-deep:   #ebe4d6;
+      --paper:       #faf7f1;
+      --ink:         #1a1410;
+      --ink-soft:    #4a3d33;
+      --muted:       #847465;
+      --line:        #d9cfbe;
+      --terracotta:  #c8501e;
+      --terracotta-deep: #a23e15;
+      --sage:        #4f6b4a;
+      --warning:     #b07219;
+
+      --font-display: "DM Sans", system-ui, sans-serif;
+      --font-wordmark: "Ravi Prakash", "DM Sans", system-ui, sans-serif;
+      --font-body:    "DM Sans", system-ui, sans-serif;
+      --font-mono:    "JetBrains Mono", ui-monospace, monospace;
     }
 
-    html {
-      scroll-behavior: smooth;
-    }
-
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
     body {
       font-family: var(--font-body);
-      background: var(--cream);
-      color: var(--dark);
-      font-size: 17px;
-      line-height: 1.65;
+      background: var(--bone);
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.55;
+      overflow-x: hidden;
     }
 
     .skip-link {
-      position: absolute;
-      left: -9999px;
-      z-index: 99999;
-      padding: 12px 16px;
-      background: var(--dark);
-      color: var(--cream);
-      text-decoration: none;
-      border-radius: 4px;
+      position: absolute; left: -9999px; z-index: 99999;
+      padding: 12px 16px; background: var(--ink); color: var(--bone);
+      text-decoration: none; border-radius: 4px;
     }
+    .skip-link:focus { left: 16px; top: 16px; }
 
-    .skip-link:focus {
-      left: 16px;
-      top: 16px;
-    }
-
-    header {
-      padding: 48px 24px 32px;
-      text-align: center;
-      border-bottom: 1px solid var(--warm);
-    }
-
-    header .eyebrow {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
+    /* ── Top utility bar ───────────────────────────── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--brown);
-      margin-bottom: 12px;
+      color: var(--ink-soft);
     }
+    .topbar .brand-mark { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); }
+    .topbar .brand-mark img { width: 22px; height: 22px; }
+    .topbar nav { display: flex; gap: 22px; }
+    .topbar nav a { color: var(--ink-soft); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .topbar nav a:hover { color: var(--terracotta); }
+    .topbar .v { color: var(--muted); }
 
-    h1.hero-title {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.12em 0.15em;
+    /* ── Hero ──────────────────────────────────────── */
+    .hero {
+      position: relative;
+      padding: 80px 28px 100px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 56px;
+      align-items: end;
+    }
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--terracotta);
+      display: inline-flex; align-items: center; gap: 10px;
+      margin-bottom: 28px;
+    }
+    .hero-eyebrow::before {
+      content: ""; width: 24px; height: 1px; background: var(--terracotta);
+    }
+    .hero-title {
       font-family: var(--font-display);
-      font-size: clamp(3.5rem, 8vw, 5.75rem);
-      font-weight: 400;
-      color: var(--dark);
-      margin: 0 auto 16px;
-      text-align: center;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      font-size: clamp(56px, 9vw, 132px);
+      line-height: 0.92;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      margin-bottom: 32px;
     }
-
-    .hero-title__text {
-      flex: 0 1 auto;
-      line-height: 1;
+    .hero-title em {
+      font-style: normal;
+      color: var(--terracotta);
     }
-
-    .hero-title__icon {
-      width: clamp(3.25rem, 12vw, 5.5rem);
-      height: auto;
-      flex-shrink: 0;
-      display: block;
-      margin-bottom: 0.15em;
+    .hero-title .barker-inline {
+      display: inline-block;
+      vertical-align: -0.05em;
+      width: 0.85em; height: 0.85em;
+      margin: 0 0.04em 0 0.06em;
+      transform: rotate(-6deg);
     }
-
-    .tagline {
-      font-size: clamp(1.05rem, 2.5vw, 1.2rem);
-      color: var(--muted);
-      max-width: 36ch;
-      margin: 0 auto 28px;
+    .hero-lede {
+      font-size: 19px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+      max-width: 44ch;
+      margin-bottom: 36px;
     }
-
-    .cta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-      align-items: center;
-    }
-
+    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 14px 26px;
-      border-radius: 999px;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 22px;
       font-family: var(--font-body);
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       text-decoration: none;
-      border: none;
+      border-radius: 999px;
+      border: 1px solid transparent;
       cursor: pointer;
-      transition: filter 0.15s ease, transform 0.15s ease;
+      transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn-primary { background: var(--ink); color: var(--bone); }
+    .btn-primary:hover { background: var(--terracotta); transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+    .btn-ghost:hover { background: var(--ink); color: var(--bone); }
+    .btn .arrow { transition: transform 0.2s; }
+    .btn:hover .arrow { transform: translateX(3px); }
+    .icon-lucide {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+      flex-shrink: 0;
     }
 
-    .btn:hover {
-      filter: brightness(1.06);
+    /* Hero side card */
+    .hero-side {
+      position: relative;
+      padding: 28px 26px 24px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: 8px 8px 0 var(--ink);
     }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-
-    .btn-secondary {
-      background: white;
-      color: var(--brown);
-      border: 2px solid var(--brown);
-    }
-
-    .hero-visual {
-      margin-top: 36px;
-      max-width: min(100%, 520px);
-      margin-left: auto;
-      margin-right: auto;
-      border-radius: var(--radius);
-      box-shadow: 0 8px 40px rgba(44, 26, 14, 0.12);
-    }
-
-    .hero-visual img {
-      display: block;
-      width: 100%;
-      height: auto;
-      border-radius: var(--radius);
-    }
-
-    main {
-      padding: 56px 24px 80px;
-    }
-
-    section {
-      max-width: var(--max-wide);
-      margin: 0 auto 56px;
-    }
-
-    section:last-of-type {
-      margin-bottom: 0;
-    }
-
-    h2 {
-      font-family: var(--font-body);
-      font-size: clamp(1.75rem, 4vw, 2.25rem);
-      font-weight: 700;
-      color: var(--brown);
-      margin-bottom: 16px;
-    }
-
-    h3 {
-      font-family: var(--font-body);
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--dark);
-      margin: 24px 0 8px;
-    }
-
-    section p {
+    .hero-side .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
       margin-bottom: 14px;
-      max-width: var(--max);
+      display: flex; justify-content: space-between;
+    }
+    .hero-side .label .live {
+      display: inline-flex; align-items: center; gap: 6px; color: var(--terracotta);
+    }
+    .hero-side .label .live::before {
+      content: ""; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--terracotta);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .scan-list { font-family: var(--font-mono); font-size: 13px; line-height: 1.9; }
+    .scan-list .row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+    .scan-list .row:last-child { border-bottom: none; }
+    .scan-list .row .name { color: var(--ink); }
+    .scan-list .row .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+    .scan-list .row .tag.fail { background: #fde6dc; color: var(--terracotta-deep); }
+    .scan-list .row .tag.warn { background: #fbeed1; color: var(--warning); }
+    .scan-list .row .tag.ok { background: #dde8d8; color: var(--sage); }
+    .hero-side .footnote {
+      margin-top: 18px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex; justify-content: space-between;
     }
 
-    section ul {
-      margin: 12px 0 0 1.25rem;
-      max-width: var(--max);
+    /* Floating mood mascot */
+    .mascot-floater {
+      position: absolute;
+      right: -40px; top: -10px;
+      width: 88px; height: 88px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(8deg);
+      box-shadow: 4px 4px 0 var(--terracotta);
     }
+    .mascot-floater img { width: 64px; height: 64px; }
 
-    section li {
-      margin-bottom: 8px;
+    /* ── Stats strip ───────────────────────────────── */
+    .stats {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: var(--bone-deep);
     }
-
-    main a {
-      color: var(--dark);
-    }
-
-    .feature-grid {
+    .stats-inner {
+      max-width: 1280px;
+      margin: 0 auto;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 0 28px;
+    }
+    .stat-cell {
+      padding: 28px 24px;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: 56px;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat-num em { font-style: normal; color: var(--terracotta); }
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    /* ── Section base ──────────────────────────────── */
+    section.block {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 96px 28px;
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: 0.8fr 2fr;
+      gap: 48px;
+      margin-bottom: 48px;
+      align-items: end;
+    }
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--terracotta);
+    }
+    .section-num::before { content: ""; display: inline-block; width: 24px; height: 1px; background: var(--terracotta); vertical-align: middle; margin-right: 10px; }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .section-title em { font-style: normal; color: var(--terracotta); }
+    .section-lede {
+      font-size: 18px;
+      color: var(--ink-soft);
+      max-width: 56ch;
+    }
+
+    /* ── Features grid ─────────────────────────────── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+    }
+    .feature {
+      padding: 36px 32px 40px;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; gap: 16px;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .feature:last-child { border-right: none; }
+    .feature:hover { background: var(--paper); }
+    .feature-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .feature h3 {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      color: var(--ink);
+    }
+    .feature h3 em { font-style: normal; color: var(--terracotta); }
+    .feature p {
+      font-size: 15px;
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+    .feature .glyph {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--ink);
+      border-radius: 50%;
+    }
+    .feature .glyph svg { width: 16px; height: 16px; stroke-width: 2; }
+
+    /* ── Rules table ───────────────────────────────── */
+    .rules-wrap {
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      background: var(--paper);
+      overflow: hidden;
+    }
+    .rules-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .rules-table thead th {
+      text-align: left;
+      padding: 14px 18px;
+      background: var(--ink);
+      color: var(--bone);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .rules-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    .rules-table tr:last-child td { border-bottom: none; }
+    .rules-table tr:hover td { background: var(--bone); }
+    .rules-table .rule-name { color: var(--ink); font-family: var(--font-body); font-size: 15px; font-weight: 500; }
+    .rules-table .wcag-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      background: var(--bone-deep);
+      color: var(--ink-soft);
+    }
+    .rules-table .level {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+    .rules-table .level.A { color: var(--sage); }
+    .rules-table .level.AA { color: var(--terracotta); }
+    .rules-table .level.best { color: var(--muted); font-style: italic; }
+
+    /* ── Spec card / install ───────────────────────── */
+    .install-block {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 56px;
+    }
+    .install-steps { list-style: none; counter-reset: step; }
+    .install-steps li {
+      counter-increment: step;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .install-steps li:last-child { border-bottom: none; }
+    .install-steps li::before {
+      content: "0" counter(step);
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: 36px;
+      line-height: 1;
+      color: var(--terracotta);
+    }
+    .install-steps h4 {
+      font-family: var(--font-body);
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+    .install-steps p { font-size: 15px; color: var(--ink-soft); }
+    .install-steps code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 1px 6px;
+      background: var(--bone-deep);
+      border-radius: 3px;
+      color: var(--ink);
+    }
+    .install-side {
+      align-self: start;
+      position: sticky; top: 24px;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--paper);
+    }
+    .install-side h4 {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .install-side .req {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px dashed var(--line);
+      font-family: var(--font-mono); font-size: 13px;
+    }
+    .install-side .req:last-child { border-bottom: none; }
+    .install-side .req .v { color: var(--ink); }
+    .install-side .req .k { color: var(--muted); }
+
+    /* ── Mood band ─────────────────────────────────── */
+    .moods {
+      background: var(--ink);
+      color: var(--bone);
+      padding: 96px 28px;
+    }
+    .moods-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: 0.8fr 2fr;
+      gap: 48px;
+      align-items: start;
+    }
+    .moods .section-num { color: var(--terracotta); }
+    .moods .section-num::before { background: var(--terracotta); }
+    .moods .section-title { color: var(--bone); }
+    .moods .section-title em { color: var(--terracotta); }
+    .moods-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
       margin-top: 24px;
     }
-
-    .feature-card {
-      background: white;
-      border: 1px solid var(--warm);
-      border-radius: var(--radius);
-      padding: 20px 22px;
-    }
-
-    .feature-card h3 {
-      margin-top: 0;
-      font-size: 1rem;
-      color: var(--brown);
-    }
-
-    .feature-card p {
-      font-size: 15px;
-      margin: 0;
-      color: var(--muted);
-    }
-
-    .install-steps {
-      counter-reset: step;
-      list-style: none;
-      margin: 20px 0 0;
-      padding: 0;
-      max-width: var(--max);
-    }
-
-    .install-steps li {
-      position: relative;
-      padding-left: 2.5rem;
-      margin-bottom: 14px;
-    }
-
-    .install-steps li::before {
-      counter-increment: step;
-      content: counter(step);
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 1.75rem;
-      height: 1.75rem;
-      background: var(--green);
-      color: white;
-      border-radius: 50%;
-      font-size: 13px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    footer {
-      background: var(--dark);
-      color: rgba(255, 255, 255, 0.85);
-      padding: 40px 24px;
-      text-align: center;
-      font-size: 15px;
-    }
-
-    footer a {
-      color: var(--warm);
-    }
-
-    footer p {
-      margin-bottom: 8px;
-    }
-
-    code {
-      font-family: ui-monospace, monospace;
-      font-size: 0.9em;
-      background: rgba(139, 74, 28, 0.08);
-      padding: 2px 6px;
+    .mood-card {
+      background: var(--paper);
+      color: var(--ink);
+      padding: 28px 26px 26px;
       border-radius: 4px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .mood-img {
+      width: 96px; height: 96px;
+      background: var(--bone);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mood-img img { width: 72px; height: 72px; }
+    .mood-card h4 {
+      font-family: var(--font-display);
+      font-size: 32px; font-weight: 600; line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .mood-card .mood-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--terracotta);
+    }
+    .mood-card p { font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+
+    /* ── Demo CTA ──────────────────────────────────── */
+    .demo-cta {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 96px 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .demo-cta .text h2 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      font-size: clamp(44px, 7vw, 88px);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+    }
+    .demo-cta .text h2 em { font-style: normal; color: var(--terracotta); }
+    .demo-cta .text p { font-size: 18px; color: var(--ink-soft); margin-bottom: 28px; max-width: 48ch; }
+    .demo-shot {
+      position: relative;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 12px 12px 0 var(--terracotta);
+      background: var(--paper);
+      aspect-ratio: 16/10;
+    }
+    .demo-shot::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image:
+        repeating-linear-gradient(135deg, transparent 0 12px, rgba(26,20,16,0.03) 12px 13px);
+    }
+    .demo-shot .placeholder {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .demo-shot .placeholder .big {
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      font-size: 56px;
+      font-style: normal;
+      color: var(--terracotta);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .demo-shot img { width: 100%; height: 100%; object-fit: cover; display: block; position: relative; z-index: 1; }
+
+    /* ── Footer ────────────────────────────────────── */
+    footer {
+      background: var(--ink);
+      color: var(--bone);
+      padding: 72px 28px 28px;
+    }
+    .foot-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      padding-bottom: 56px;
+      border-bottom: 1px solid rgba(244,239,230,0.15);
+    }
+    .foot-brand h3 {
+      font-family: var(--font-wordmark);
+      font-size: 56px; font-weight: 400; line-height: 1; letter-spacing: 0.01em;
+      margin-bottom: 12px;
+    }
+    .foot-brand h3 em { color: var(--terracotta); font-style: normal; }
+    .foot-brand p { color: rgba(244,239,230,0.65); max-width: 32ch; font-size: 14px; }
+    .foot-col h5 {
+      font-family: var(--font-mono);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: rgba(244,239,230,0.5);
+      margin-bottom: 16px;
+    }
+    .foot-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .foot-col a { color: var(--bone); text-decoration: none; font-size: 14px; }
+    .foot-col a:hover { color: var(--terracotta); }
+    .foot-bottom {
+      max-width: 1280px; margin: 0 auto;
+      padding-top: 24px;
+      display: flex; justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(244,239,230,0.4);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── Responsive ────────────────────────────────── */
+    @media (max-width: 980px) {
+      .hero-grid, .install-block, .moods-inner, .demo-cta, .section-head, .foot-inner {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .stat-cell:nth-child(2) { border-right: none; }
+      .stat-cell:nth-child(1), .stat-cell:nth-child(2) { border-bottom: 1px solid var(--line); }
+      .features, .moods-grid { grid-template-columns: 1fr; }
+      .feature { border-right: none; border-bottom: 1px solid var(--line); }
+      .feature:last-child { border-bottom: none; }
+      .topbar nav { display: none; }
+      .install-side { position: static; }
     }
   </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to main content</a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-  <header>
-    <p class="eyebrow">Chrome DevTools</p>
-    <h1 class="hero-title">
-      <span class="hero-title__text">A11y Barker</span>
-      <img class="hero-title__icon" src="barker.svg" width="72" height="72" alt="" aria-hidden="true">
-    </h1>
-    <p class="tagline">Accessibility visualizer for Chrome DevTools — see tab order, names, headings, and WCAG issues directly on the page you are inspecting.</p>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="https://github.com/estherj-hsu/a11y-barker" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-      <a class="btn btn-secondary" href="demo.html">Try the Paw Pals demo</a>
-    </div>
-    <figure class="hero-visual">
-      <img src="screenshot.png" width="1200" height="750" alt="A11y Barker DevTools panel scanning a page, listing accessibility issues such as missing alt text and color contrast.">
-    </figure>
-  </header>
+  <div class="topbar">
+    <a class="brand-mark" href="#">
+      <img src="barker.svg" alt="" aria-hidden="true">
+      A11y&nbsp;Barker
+    </a>
+    <nav aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#rules">Rules</a>
+      <a href="#install">Install</a>
+      <a href="demo.html">Demo</a>
+      <a href="https://github.com/estherj-hsu/a11y-barker">GitHub <i data-lucide="external-link" class="icon-lucide" aria-hidden="true"></i></a>
+    </nav>
+  </div>
 
   <main id="main">
-    <section aria-labelledby="about-heading">
-      <h2 id="about-heading">What is A11y Barker?</h2>
-      <p>
-        <strong>A11y Barker</strong> is a free, open-source <strong>Chrome extension</strong> that adds a dedicated panel to <strong>Chrome DevTools</strong>. It helps developers and designers <strong>visualize accessibility</strong> on any webpage: where focus goes, what screen readers announce for controls, how headings are structured, and which elements fail common <strong>WCAG</strong>-aligned checks — without leaving the browser.
-      </p>
-      <p>
-        Overlays run in an isolated <strong>shadow DOM</strong> layer so page styles do not clash with highlights. For <strong>single-page apps</strong>, a <strong>MutationObserver</strong> keeps analysis in sync when the DOM or relevant attributes change.
-      </p>
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-text">
+          <p class="hero-eyebrow">Chrome DevTools extension</p>
+          <h1 class="hero-title">
+            See what your<br>
+            page <em>says</em><img class="barker-inline" src="barker.svg" alt="" aria-hidden="true"> out&nbsp;loud.
+          </h1>
+          <p class="hero-lede">
+            A11y Barker is a free DevTools panel that visualizes accessibility on any webpage — tab order, screen-reader names, heading structure, and WCAG checks, layered directly on the page you're inspecting.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/estherj-hsu/a11y-barker">
+              Get on GitHub <i data-lucide="arrow-right" class="icon-lucide arrow" aria-hidden="true"></i>
+            </a>
+            <a class="btn btn-ghost" href="demo.html">
+              Try Paw Pals demo
+            </a>
+          </div>
+        </div>
+
+        <aside class="hero-side" aria-label="Sample scan output">
+          <div class="mascot-floater" aria-hidden="true">
+            <img src="barker.svg" alt="">
+          </div>
+          <div class="label">
+            <span>Sniffing paw-pals.local</span>
+            <span class="live">Live</span>
+          </div>
+          <div class="scan-list">
+            <div class="row"><span class="name">missing-image-alt</span><span class="tag fail">12 fail</span></div>
+            <div class="row"><span class="name">color-contrast-aa</span><span class="tag fail">8 fail</span></div>
+            <div class="row"><span class="name">heading-skip</span><span class="tag fail">3 fail</span></div>
+            <div class="row"><span class="name">label-missing</span><span class="tag fail">6 fail</span></div>
+            <div class="row"><span class="name">positive-tabindex</span><span class="tag warn">4 warn</span></div>
+            <div class="row"><span class="name">focus-outline</span><span class="tag warn">9 warn</span></div>
+            <div class="row"><span class="name">page-language</span><span class="tag fail">1 fail</span></div>
+            <div class="row"><span class="name">landmark-unique</span><span class="tag ok">pass</span></div>
+          </div>
+          <div class="footnote">
+            <span>57 issues · 11 rules</span>
+            <span>2.4s</span>
+          </div>
+        </aside>
+      </div>
     </section>
 
-    <section aria-labelledby="features-heading">
-      <h2 id="features-heading">Features</h2>
-      <div class="feature-grid">
-        <article class="feature-card">
-          <h3>Overlay modes</h3>
-          <p>Tab order, screen reader content, heading structure, <code>aria-hidden</code> regions, and issue highlights on the live page.</p>
+    <div class="stats">
+      <div class="stats-inner">
+        <div class="stat-cell">
+          <div class="stat-num">11<em>+</em></div>
+          <div class="stat-label">Static rules</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num"><em>5</em></div>
+          <div class="stat-label">Overlay modes</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">SPA<em>✓</em></div>
+          <div class="stat-label">Auto re-scan</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num"><em>$0</em></div>
+          <div class="stat-label">Open source</div>
+        </div>
+      </div>
+    </div>
+
+    <section class="block" id="features">
+      <div class="section-head">
+        <p class="section-num">01 — Capabilities</p>
+        <div>
+          <h2 class="section-title">A panel that <em>shows</em>,<br>not just lists.</h2>
+        </div>
+      </div>
+
+      <div class="features">
+        <article class="feature">
+          <span class="glyph"><i data-lucide="scan" aria-hidden="true"></i></span>
+          <p class="feature-num">Mode 01</p>
+          <h3>Overlays on the <em>live page</em></h3>
+          <p>Tab order, screen-reader names, heading structure, and <code>aria-hidden</code> regions painted directly over the DOM you're inspecting — never in a separate tab.</p>
         </article>
-        <article class="feature-card">
-          <h3>Static rules</h3>
-          <p>Checks for missing alt text, empty controls, labels, tabindex, landmarks, headings, links, language, focus styles, contrast, label-in-name, and large images.</p>
+        <article class="feature">
+          <span class="glyph"><i data-lucide="flag" aria-hidden="true"></i></span>
+          <p class="feature-num">Mode 02</p>
+          <h3>Static rules with <em>WCAG anchors</em></h3>
+          <p>Eleven first-party checks for alts, labels, contrast, landmarks, headings, focus styles and more — every issue links to the WCAG criterion it cites.</p>
         </article>
-        <article class="feature-card">
-          <h3>AI checks (optional)</h3>
-          <p>With an Anthropic API key in <code>config.js</code>, optional Claude-powered heading and image-alt reviews after you run Sniff page.</p>
+        <article class="feature">
+          <span class="glyph"><i data-lucide="sparkles" aria-hidden="true"></i></span>
+          <p class="feature-num">Mode 03</p>
+          <h3>Optional <em>Claude review</em></h3>
+          <p>Drop your Anthropic key into <code>config.js</code> and Barker can ask Claude to review heading structure and image alt text contextually — toggleable, cached per sniff.</p>
         </article>
       </div>
     </section>
 
-    <section aria-labelledby="install-heading">
-      <h2 id="install-heading">Installation</h2>
-      <p>A11y Barker is not distributed on the Chrome Web Store; install it as an unpacked extension:</p>
-      <ol class="install-steps">
-        <li>Clone or download the <a href="https://github.com/estherj-hsu/a11y-barker">repository</a>.</li>
-        <li>Open <code>chrome://extensions</code> in Chrome or a Chromium-based browser.</li>
-        <li>Enable <strong>Developer mode</strong>, then choose <strong>Load unpacked</strong> and select the extension folder (the directory that contains <code>manifest.json</code>).</li>
-        <li>Open DevTools on any tab — use the <strong>A11y Barker</strong> panel to sniff the page and toggle overlays.</li>
-      </ol>
+    <section class="moods">
+      <div class="moods-inner">
+        <div>
+          <p class="section-num">02 — Mascot</p>
+          <h2 class="section-title">Meet <em>Barker.</em><br>He has feelings.</h2>
+        </div>
+        <div>
+          <p class="section-lede" style="color: rgba(244,239,230,0.7);">
+            Barker's expression in the panel header reflects what he just sniffed. It's a glanceable status indicator — and a small reward when you ship a clean page.
+          </p>
+          <div class="moods-grid">
+            <div class="mood-card">
+              <div class="mood-img"><img src="barker.svg" alt=""></div>
+              <span class="mood-tag">Mood — Happy</span>
+              <h4>Good dog.</h4>
+              <p>Zero issues found. Tail wags. You earned it.</p>
+            </div>
+            <div class="mood-card">
+              <div class="mood-img"><img src="barker-judgemental.svg" alt=""></div>
+              <span class="mood-tag">Mood — Judgemental</span>
+              <h4>Watching.</h4>
+              <p>Default state. He's waiting for you to run a sniff.</p>
+            </div>
+            <div class="mood-card">
+              <div class="mood-img"><img src="barker-sad.svg" alt=""></div>
+              <span class="mood-tag">Mood — Sad</span>
+              <h4>Ruff.</h4>
+              <p>Issues found. The list is in the panel — Barker will wait.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section aria-labelledby="demo-heading">
-      <h2 id="demo-heading">Demo page</h2>
-      <p>
-        The <a href="demo.html">Paw Pals demo</a> is a fictional dog social network page built <em>with intentional accessibility problems</em> so you can see Barker’s overlays and rules in action. Use it to learn what the extension reports before you run it on your own sites.
-      </p>
+    <section class="block" id="rules">
+      <div class="section-head">
+        <p class="section-num">03 — Rules</p>
+        <div>
+          <h2 class="section-title">Eleven static checks,<br>each tied to a <em>criterion.</em></h2>
+        </div>
+      </div>
+
+      <div class="rules-wrap">
+        <table class="rules-table">
+          <thead>
+            <tr>
+              <th>Rule</th>
+              <th>WCAG</th>
+              <th>Level</th>
+              <th>What it catches</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="rule-name">Missing image alt</td><td><span class="wcag-pill">1.1.1</span></td><td><span class="level A">A</span></td><td>Images without an <code>alt</code> attribute or an empty one when context is needed.</td></tr>
+            <tr><td class="rule-name">Empty button or link</td><td><span class="wcag-pill">4.1.2</span></td><td><span class="level A">A</span></td><td>Interactive controls with no accessible name.</td></tr>
+            <tr><td class="rule-name">Missing input label</td><td><span class="wcag-pill">1.3.1 / 4.1.2</span></td><td><span class="level A">A</span></td><td>Inputs without a visible or programmatic label.</td></tr>
+            <tr><td class="rule-name">Positive tabindex</td><td><span class="wcag-pill">2.4.3</span></td><td><span class="level A">A</span></td><td><code>tabindex</code> &gt; 0 disrupting natural focus order.</td></tr>
+            <tr><td class="rule-name">Duplicate landmark</td><td><span class="wcag-pill">1.3.1</span></td><td><span class="level A">A</span></td><td>Multiple unlabelled landmarks of the same role.</td></tr>
+            <tr><td class="rule-name">Heading hierarchy skip</td><td><span class="wcag-pill">1.3.1</span></td><td><span class="level A">A</span></td><td>Going from <code>h1</code> straight to <code>h3</code>, etc.</td></tr>
+            <tr><td class="rule-name">Ambiguous link text</td><td><span class="wcag-pill">2.4.4</span></td><td><span class="level A">A</span></td><td>"Click here", "read more" — names that need context.</td></tr>
+            <tr><td class="rule-name">Missing page language</td><td><span class="wcag-pill">3.1.1</span></td><td><span class="level A">A</span></td><td><code>&lt;html&gt;</code> with no <code>lang</code> attribute.</td></tr>
+            <tr><td class="rule-name">Focus outline removed</td><td><span class="wcag-pill">2.4.7</span></td><td><span class="level AA">AA</span></td><td><code>outline: none</code> with no replacement focus style.</td></tr>
+            <tr><td class="rule-name">Insufficient color contrast</td><td><span class="wcag-pill">1.4.3</span></td><td><span class="level AA">AA</span></td><td>Text below 4.5:1 (or 3:1 for large text).</td></tr>
+            <tr><td class="rule-name">Label in name</td><td><span class="wcag-pill">2.5.3</span></td><td><span class="level AA">AA</span></td><td>Visible label not contained in the accessible name.</td></tr>
+            <tr><td class="rule-name">Large image &gt; 1MB</td><td><span class="wcag-pill">—</span></td><td><span class="level best">best practice</span></td><td>Heavy images that hurt mobile users on metered networks.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block" id="install">
+      <div class="section-head">
+        <p class="section-num">04 — Install</p>
+        <div>
+          <h2 class="section-title">Sideload in <em>under a minute.</em></h2>
+        </div>
+      </div>
+
+      <div class="install-block">
+        <ol class="install-steps">
+          <li>
+            <div>
+              <h4>Clone the repo</h4>
+              <p>Grab <a href="https://github.com/estherj-hsu/a11y-barker">estherj-hsu/a11y-barker</a> from GitHub or download the zip.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Open <code>chrome://extensions</code></h4>
+              <p>Works in Chrome, Edge, Brave, Arc — anything Chromium with Manifest V3.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Enable Developer mode → Load unpacked</h4>
+              <p>Point it at the folder containing <code>manifest.json</code>.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Open DevTools → A11y Barker tab</h4>
+              <p>Hit <strong>Sniff page</strong>. Toggle overlays. Watch Barker's mood change.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Optional: add an Anthropic key</h4>
+              <p>Copy <code>config.js.sample</code> to <code>config.js</code> and paste your key. Reload the extension to enable AI checks.</p>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="install-side">
+          <h4>System requirements</h4>
+          <div class="req"><span class="k">Browser</span><span class="v">Chromium · MV3</span></div>
+          <div class="req"><span class="k">DevTools</span><span class="v">Required</span></div>
+          <div class="req"><span class="k">License</span><span class="v">MIT</span></div>
+          <div class="req"><span class="k">AI checks</span><span class="v">Anthropic key (optional)</span></div>
+          <div class="req"><span class="k">Default model</span><span class="v">Haiku 4.5</span></div>
+          <div class="req"><span class="k">Storage</span><span class="v">Local only</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-cta">
+      <div class="text">
+        <h2>Try it on a page<br>that <em>fails on purpose.</em></h2>
+        <p>Paw Pals is a fictional dog social network we built with intentional accessibility issues — missing alts, low-contrast text, broken tab order, repeated link names. Run Barker on it to see exactly what each rule catches.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="demo.html">Open the demo <i data-lucide="arrow-right" class="icon-lucide arrow" aria-hidden="true"></i></a>
+          <a class="btn btn-ghost" href="#rules">See all rules</a>
+        </div>
+      </div>
+      <div class="demo-shot">
+        <img src="screenshot.png" alt="A11y Barker DevTools panel showing 57 issues found on the Paw Pals demo page, with overlays painting tab order numbers, heading levels, and red contrast warnings on the live page.">
+      </div>
     </section>
   </main>
 
   <footer>
-    <p><strong>A11y Barker</strong> — accessibility visualization for developers.</p>
-    <p>
-      <a href="https://github.com/estherj-hsu/a11y-barker">GitHub</a>
-      ·
-      <a href="demo.html">Paw Pals demo</a>
-    </p>
+    <div class="foot-inner">
+      <div class="foot-brand">
+        <h3>A11y <em>Barker</em></h3>
+        <p>An accessibility visualizer for Chrome DevTools. Free, open source, occasionally judgemental.</p>
+      </div>
+      <div class="foot-col">
+        <h5>Project</h5>
+        <ul>
+          <li><a href="https://github.com/estherj-hsu/a11y-barker">GitHub</a></li>
+          <li><a href="demo.html">Paw Pals demo</a></li>
+          <li><a href="#rules">Rule reference</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Docs</h5>
+        <ul>
+          <li><a href="#install">Install</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="https://www.w3.org/WAI/WCAG22/quickref/">WCAG 2.2</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 A11y Barker</span>
+      <span>Made for screen readers and the people who love them.</span>
+    </div>
   </footer>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 </html>

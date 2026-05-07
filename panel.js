@@ -17,8 +17,8 @@ const AI_MODEL_DEFAULT = AI_MODEL_HAIKU;
 const THEME_KEY = 'a11yBarkerTheme';
 
 const AI_KEYS = [
-  [AI_HEADING_KEY, 'Heading structure'],
-  [AI_ALT_KEY, 'Images alt'],
+  [AI_HEADING_KEY, 'Heading structure', 'heading'],
+  [AI_ALT_KEY, 'Images alt', 'image'],
 ];
 
 /** When storage has no value yet, AI toggles are off (opt-in). */
@@ -84,6 +84,12 @@ const ICON_CLIPBOARD = '<svg xmlns="http://www.w3.org/2000/svg" width="14" heigh
 const ICON_CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 const ICON_SUN = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
 const ICON_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+const ICON_TAB = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13l-3-3"/><path d="M21 12H8l3 3"/><path d="M3 18h13l-3 3"/></svg>';
+const ICON_SR = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 10s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="10" r="3"/></svg>';
+const ICON_HEADING = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16"/><path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 4h12"/><path d="M6 20h12"/></svg>';
+const ICON_HIDDEN = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+const ICON_ISSUES = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+const ICON_IMAGE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
 
 // ---------------------------------------------------------------------------
 // Theme management
@@ -142,12 +148,26 @@ function extValid() {
 }
 
 const KEYS = [
-  [TAB_KEY, 'Tab order'],
-  [SR_KEY, 'SR content ([role] name)'],
-  [HEADING_KEY, 'Heading structure'],
-  [ARIA_HIDDEN_KEY, 'aria-hidden'],
-  [ISSUES_PANEL_KEY, 'Issues'],
+  [TAB_KEY, 'Tab order', 'tab'],
+  [SR_KEY, 'SR content ([role] name)', 'sr'],
+  [HEADING_KEY, 'Heading structure', 'heading'],
+  [ARIA_HIDDEN_KEY, 'aria-hidden', 'hidden'],
+  [ISSUES_PANEL_KEY, 'Issues', 'issues'],
 ];
+
+function iconForToggle(iconKey) {
+  if (iconKey === 'tab') return ICON_TAB;
+  if (iconKey === 'sr') return ICON_SR;
+  if (iconKey === 'heading') return ICON_HEADING;
+  if (iconKey === 'hidden') return ICON_HIDDEN;
+  if (iconKey === 'issues') return ICON_ISSUES;
+  if (iconKey === 'image') return ICON_IMAGE;
+  return '';
+}
+
+function buildToggleInnerHtml(label, iconKey) {
+  return `<span class="toggle-label-wrap"><span class="toggle-glyph">${iconForToggle(iconKey)}</span><span class="toggle-label">${escapeHtml(label)}</span></span><div class="pill"></div>`;
+}
 
 const WARN_RULES = new Set(['tabindex-positive', 'duplicate-landmark', 'image-large', 'heading-skip', 'link-ambiguous', 'focus-visible', 'label-in-name']);
 
@@ -383,12 +403,12 @@ function renderAiToggles() {
     chrome.storage.local.get(AI_KEYS.map(([k]) => k), (data) => {
       if (_extInvalidated) return;
       container.innerHTML = '';
-      AI_KEYS.forEach(([key, label]) => {
+      AI_KEYS.forEach(([key, label, iconKey]) => {
         const checked = data[key] !== undefined ? !!data[key] : AI_TOGGLE_DEFAULT;
         const row = document.createElement('div');
         row.className = 'toggle-row' + (checked ? ' on' : '');
         row.dataset.key = key;
-        row.innerHTML = `<span class="toggle-label">${escapeHtml(label)}</span><div class="pill"></div>`;
+        row.innerHTML = buildToggleInnerHtml(label, iconKey);
         row.addEventListener('click', () => {
           if (_extInvalidated) return;
           const next = !row.classList.contains('on');
@@ -439,6 +459,7 @@ function refreshAiCheckSection() {
           updateAiHeadingUiVisibility();
           return;
         }
+        const hasConfig = !!(res?.ok && res?.hasConfig);
         const hasApiKey = !!(res?.ok && res?.hasApiKey);
         _panelHasAiApiKey = hasApiKey;
         if (res?.defaultModel === AI_MODEL_SONNET) {
@@ -446,7 +467,7 @@ function refreshAiCheckSection() {
         } else {
           _panelDefaultAiModel = AI_MODEL_HAIKU;
         }
-        if (hasApiKey) {
+        if (hasConfig && hasApiKey) {
           section.style.display = '';
           renderAiToggles();
           initAiModelRadios();
@@ -470,12 +491,12 @@ function renderToggles() {
     chrome.storage.local.get(KEYS.map(([k]) => k), (data) => {
       const container = document.getElementById('toggles');
       container.innerHTML = '';
-      KEYS.forEach(([key, label]) => {
+      KEYS.forEach(([key, label, iconKey]) => {
         const checked = data[key] !== undefined ? !!data[key] : true;
         const row = document.createElement('div');
         row.className = 'toggle-row' + (checked ? ' on' : '');
         row.dataset.key = key;
-        row.innerHTML = `<span class="toggle-label">${escapeHtml(label)}</span><div class="pill"></div>`;
+        row.innerHTML = buildToggleInnerHtml(label, iconKey);
         row.addEventListener('click', () => {
           if (_extInvalidated) return;
           const next = !row.classList.contains('on');

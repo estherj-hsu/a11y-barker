@@ -1,4 +1,26 @@
-try { importScripts('config.js'); } catch (_) {}
+let HAS_LOCAL_CONFIG = false;
+let CONFIG_READY = Promise.resolve();
+
+function loadOptionalConfig() {
+  const configUrl = chrome.runtime.getURL('config.js');
+  CONFIG_READY = fetch(configUrl)
+    .then((res) => {
+      if (!res.ok) return null;
+      return res.text();
+    })
+    .then((src) => {
+      if (!src || !src.trim()) return;
+      // Evaluate local user config in service-worker global scope.
+      // eslint-disable-next-line no-new-func
+      Function(src)();
+      HAS_LOCAL_CONFIG = true;
+    })
+    .catch(() => {
+      HAS_LOCAL_CONFIG = false;
+    });
+}
+
+loadOptionalConfig();
 
 const DEFAULT_AI_MODEL = 'claude-haiku-4-5-20251001';
 const ALLOWED_AI_MODELS = new Set([
@@ -57,53 +79,62 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.from !== 'panel') return false;
 
   if (msg.payload?.action === 'getAiConfigStatus') {
-    const key = globalThis.A11Y_BARKER_CONFIG?.apiKey;
-    const hasApiKey = typeof key === 'string' && key.trim().length > 0;
-    sendResponse({ ok: true, hasApiKey, defaultModel: getDefaultModelFromConfig() });
-    return false;
+    CONFIG_READY.then(() => {
+      const key = globalThis.A11Y_BARKER_CONFIG?.apiKey;
+      const hasApiKey = typeof key === 'string' && key.trim().length > 0;
+      sendResponse({
+        ok: true,
+        hasConfig: HAS_LOCAL_CONFIG,
+        hasApiKey,
+        defaultModel: getDefaultModelFromConfig(),
+      });
+    });
+    return true;
   }
 
   if (msg.from === 'panel' && (msg.payload?.action === 'aiAltCheck' || msg.payload?.action === 'aiHeadingCheck')) {
-    const apiKey = globalThis.A11Y_BARKER_CONFIG?.apiKey;
-    if (!apiKey) {
-      sendResponse({ ok: false, error: 'No API key in config.js' });
-      return true;
-    }
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        // Required for browser/extension contexts so Anthropic allows the request (BYO key).
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: resolveAiModel(msg.payload),
-        max_tokens: resolveMaxTokens(),
-        messages: [{ role: 'user', content: msg.payload.prompt }],
-      }),
-    })
-      .then(async (r) => {
-        let data = {};
-        try {
-          data = await r.json();
-        } catch (_) { /* non-JSON body */ }
-        const text = data.content?.[0]?.text;
-        if (text != null && text !== '') {
-          sendResponse({ ok: true, result: text });
-          return;
-        }
-        const errMsg = data.error?.message || 'API returned no content';
-        const errType = data.error?.type;
-        const aiAuthError =
-          r.status === 401 ||
-          r.status === 403 ||
-          errType === 'authentication_error' ||
-          (typeof errType === 'string' && errType.toLowerCase().includes('authentication'));
-        sendResponse({ ok: false, error: errMsg, aiAuthError });
+    CONFIG_READY.then(() => {
+      const apiKey = globalThis.A11Y_BARKER_CONFIG?.apiKey;
+      if (!apiKey) {
+        sendResponse({ ok: false, error: 'No API key in config.js' });
+        return;
+      }
+      fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          // Required for browser/extension contexts so Anthropic allows the request (BYO key).
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: resolveAiModel(msg.payload),
+          max_tokens: resolveMaxTokens(),
+          messages: [{ role: 'user', content: msg.payload.prompt }],
+        }),
       })
-      .catch((e) => sendResponse({ ok: false, error: e.message, aiAuthError: false }));
+        .then(async (r) => {
+          let data = {};
+          try {
+            data = await r.json();
+          } catch (_) { /* non-JSON body */ }
+          const text = data.content?.[0]?.text;
+          if (text != null && text !== '') {
+            sendResponse({ ok: true, result: text });
+            return;
+          }
+          const errMsg = data.error?.message || 'API returned no content';
+          const errType = data.error?.type;
+          const aiAuthError =
+            r.status === 401 ||
+            r.status === 403 ||
+            errType === 'authentication_error' ||
+            (typeof errType === 'string' && errType.toLowerCase().includes('authentication'));
+          sendResponse({ ok: false, error: errMsg, aiAuthError });
+        })
+        .catch((e) => sendResponse({ ok: false, error: e.message, aiAuthError: false }));
+    });
     return true;
   }
 
