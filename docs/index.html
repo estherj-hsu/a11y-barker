@@ -3,892 +3,608 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A11y Barker is a free Chrome DevTools extension that visualizes accessibility on any webpage: tab order, screen reader labels, headings, WCAG checks, and optional Claude AI reviews.">
+  <meta name="keywords" content="accessibility, a11y, Chrome extension, DevTools, WCAG, WCAG 2, screen reader, tab order, color contrast, alt text, Chrome DevTools extension">
+  <meta name="author" content="Esther Hsu">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#2c1a0e">
+
   <title>A11y Barker — Accessibility visualizer for Chrome DevTools</title>
-  <link rel="icon" type="image/png" href="favico.png">
+
+  <link rel="canonical" href="https://estherh.dev/a11y-barker/">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/dog/icon-32.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://estherh.dev/a11y-barker/">
+  <meta property="og:title" content="A11y Barker — Accessibility visualizer for Chrome DevTools">
+  <meta property="og:description" content="Visualize accessibility on any webpage from Chrome DevTools: overlays for tab order and headings, WCAG rule checks, SPA-aware updates, and optional AI-powered reviews.">
+  <meta property="og:image" content="https://estherh.dev/a11y-barker/og.png">
+  <meta property="og:image:alt" content="A11y Barker logo and tagline: Accessibility visualizer for Chrome DevTools">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="A11y Barker">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A11y Barker — Accessibility visualizer for Chrome DevTools">
+  <meta name="twitter:description" content="Visualize accessibility on any webpage from Chrome DevTools: overlays, WCAG checks, and optional AI reviews.">
+  <meta name="twitter:image" content="https://estherh.dev/a11y-barker/og.png">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Ravi+Prakash&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Ravi+Prakash&display=swap" rel="stylesheet">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "A11y Barker",
+    "description": "Chrome DevTools extension for visualizing accessibility on webpages: tab order, screen reader content, heading structure, WCAG static rules, and optional Anthropic Claude AI checks.",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Chrome",
+    "browserRequirements": "Requires Chromium-based browser with Manifest V3 extension support",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "url": "https://estherh.dev/a11y-barker/",
+    "codeRepository": "https://github.com/estherj-hsu/a11y-barker",
+    "author": { "@type": "Person", "name": "Esther Hsu" }
+  }
+  </script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bone:        #f4efe6;
-      --bone-deep:   #ebe4d6;
-      --paper:       #faf7f1;
-      --ink:         #1a1410;
-      --ink-soft:    #4a3d33;
-      --muted:       #847465;
-      --line:        #d9cfbe;
-      --terracotta:  #c8501e;
-      --terracotta-deep: #a23e15;
-      --sage:        #4f6b4a;
-      --warning:     #b07219;
-
-      --font-display: "DM Sans", system-ui, sans-serif;
-      --font-wordmark: "Ravi Prakash", "DM Sans", system-ui, sans-serif;
-      --font-body:    "DM Sans", system-ui, sans-serif;
-      --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+      --ink: #1a1008;
+      --paper: #faf7f2;
+      --paper2: #f0e8db;
+      --brown: #8b4a1c;
+      --brown-light: #cd7023;
+      --yellow: #f5c842;
+      --red: #c0392b;
+      --green: #2d6a4f;
+      --muted: #6b5a47;
+      --rule: #d4c4b0;
+      --font-display: 'Ravi Prakash', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
     }
 
-    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    html { scroll-behavior: smooth; }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='130' viewBox='40 68 80 60'%3E%3Cg fill='%238b4a1c' opacity='0.055' transform='rotate(-38 80 98)'%3E%3Cellipse cx='80' cy='110' rx='24' ry='20'/%3E%3Cellipse cx='58' cy='88' rx='10' ry='13' transform='rotate(-20 58 88)'/%3E%3Cellipse cx='76' cy='78' rx='10' ry='13' transform='rotate(-5 76 78)'/%3E%3Cellipse cx='95' cy='80' rx='10' ry='13' transform='rotate(10 95 80)'/%3E%3Cellipse cx='111' cy='90' rx='9' ry='12' transform='rotate(25 111 90)'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 780px 780px;
+      background-position: -340px -210px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
     body {
       font-family: var(--font-body);
-      background: var(--bone);
+      background: var(--paper);
       color: var(--ink);
       font-size: 16px;
-      line-height: 1.55;
-      overflow-x: hidden;
+      line-height: 1.65;
     }
 
     .skip-link {
-      position: absolute; left: -9999px; z-index: 99999;
-      padding: 12px 16px; background: var(--ink); color: var(--bone);
-      text-decoration: none; border-radius: 4px;
-    }
-    .skip-link:focus { left: 16px; top: 16px; }
-
-    /* ── Top utility bar ───────────────────────────── */
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 28px;
-      border-bottom: 1px solid var(--line);
-      font-family: var(--font-mono);
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--ink-soft);
-    }
-    .topbar .brand-mark { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); }
-    .topbar .brand-mark img { width: 22px; height: 22px; }
-    .topbar nav { display: flex; gap: 22px; }
-    .topbar nav a { color: var(--ink-soft); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-    .topbar nav a:hover { color: var(--terracotta); }
-    .topbar .v { color: var(--muted); }
-
-    /* ── Hero ──────────────────────────────────────── */
-    .hero {
-      position: relative;
-      padding: 80px 28px 100px;
-      max-width: 1280px;
-      margin: 0 auto;
-    }
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.15fr 1fr;
-      gap: 56px;
-      align-items: end;
-    }
-    .hero-eyebrow {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--terracotta);
-      display: inline-flex; align-items: center; gap: 10px;
-      margin-bottom: 28px;
-    }
-    .hero-eyebrow::before {
-      content: ""; width: 24px; height: 1px; background: var(--terracotta);
-    }
-    .hero-title {
-      font-family: var(--font-display);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-      font-size: clamp(56px, 9vw, 132px);
-      line-height: 0.92;
-      letter-spacing: -0.025em;
-      color: var(--ink);
-      margin-bottom: 32px;
-    }
-    .hero-title em {
-      font-style: normal;
-      color: var(--terracotta);
-    }
-    .hero-title .barker-inline {
-      display: inline-block;
-      vertical-align: -0.05em;
-      width: 0.85em; height: 0.85em;
-      margin: 0 0.04em 0 0.06em;
-      transform: rotate(-6deg);
-    }
-    .hero-lede {
-      font-size: 19px;
-      line-height: 1.5;
-      color: var(--ink-soft);
-      max-width: 44ch;
-      margin-bottom: 36px;
-    }
-    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 22px;
-      font-family: var(--font-body);
-      font-size: 15px;
-      font-weight: 600;
-      text-decoration: none;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
-    }
-    .btn-primary { background: var(--ink); color: var(--bone); }
-    .btn-primary:hover { background: var(--terracotta); transform: translateY(-1px); }
-    .btn-ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
-    .btn-ghost:hover { background: var(--ink); color: var(--bone); }
-    .btn .arrow { transition: transform 0.2s; }
-    .btn:hover .arrow { transform: translateX(3px); }
-    .icon-lucide {
-      width: 14px;
-      height: 14px;
-      stroke-width: 2;
-      flex-shrink: 0;
-    }
-
-    /* Hero side card */
-    .hero-side {
-      position: relative;
-      padding: 28px 26px 24px;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      box-shadow: 8px 8px 0 var(--ink);
-    }
-    .hero-side .label {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-      margin-bottom: 14px;
-      display: flex; justify-content: space-between;
-    }
-    .hero-side .label .live {
-      display: inline-flex; align-items: center; gap: 6px; color: var(--terracotta);
-    }
-    .hero-side .label .live::before {
-      content: ""; width: 6px; height: 6px; border-radius: 50%;
-      background: var(--terracotta);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-    .scan-list { font-family: var(--font-mono); font-size: 13px; line-height: 1.9; }
-    .scan-list .row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--line); }
-    .scan-list .row:last-child { border-bottom: none; }
-    .scan-list .row .name { color: var(--ink); }
-    .scan-list .row .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
-    .scan-list .row .tag.fail { background: #fde6dc; color: var(--terracotta-deep); }
-    .scan-list .row .tag.warn { background: #fbeed1; color: var(--warning); }
-    .scan-list .row .tag.ok { background: #dde8d8; color: var(--sage); }
-    .hero-side .footnote {
-      margin-top: 18px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--muted);
-      display: flex; justify-content: space-between;
-    }
-
-    /* Floating mood mascot */
-    .mascot-floater {
       position: absolute;
-      right: -40px; top: -10px;
-      width: 88px; height: 88px;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      transform: rotate(8deg);
-      box-shadow: 4px 4px 0 var(--terracotta);
+      left: -9999px;
+      z-index: 99999;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: var(--paper);
+      text-decoration: none;
+      font-size: 14px;
     }
-    .mascot-floater img { width: 64px; height: 64px; }
+    .skip-link:focus { left: 12px; top: 12px; }
 
-    /* ── Stats strip ───────────────────────────────── */
-    .stats {
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      background: var(--bone-deep);
-    }
-    .stats-inner {
-      max-width: 1280px;
+    /* ── LAYOUT ── */
+    .page {
+      max-width: 860px;
       margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      padding: 0 28px;
-    }
-    .stat-cell {
-      padding: 28px 24px;
-      border-right: 1px solid var(--line);
-      display: flex; flex-direction: column; gap: 6px;
-    }
-    .stat-cell:last-child { border-right: none; }
-    .stat-num {
-      font-family: var(--font-display);
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      font-size: 56px;
-      line-height: 1;
-      color: var(--ink);
-    }
-    .stat-num em { font-style: normal; color: var(--terracotta); }
-    .stat-label {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
+      padding: 0 28px 80px;
     }
 
-    /* ── Section base ──────────────────────────────── */
-    section.block {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 96px 28px;
-    }
-    .section-head {
-      display: grid;
-      grid-template-columns: 0.8fr 2fr;
-      gap: 48px;
-      margin-bottom: 48px;
-      align-items: end;
-    }
-    .section-num {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--terracotta);
-    }
-    .section-num::before { content: ""; display: inline-block; width: 24px; height: 1px; background: var(--terracotta); vertical-align: middle; margin-right: 10px; }
-    .section-title {
-      font-family: var(--font-display);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-      font-size: clamp(40px, 6vw, 72px);
-      line-height: 1;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-    }
-    .section-title em { font-style: normal; color: var(--terracotta); }
-    .section-lede {
-      font-size: 18px;
-      color: var(--ink-soft);
-      max-width: 56ch;
-    }
-
-    /* ── Features grid ─────────────────────────────── */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0;
-      border-top: 1px solid var(--ink);
-      border-bottom: 1px solid var(--ink);
-    }
-    .feature {
-      padding: 36px 32px 40px;
-      border-right: 1px solid var(--line);
-      display: flex; flex-direction: column; gap: 16px;
+    /* ── HEADER ── */
+    header {
+      padding: 52px 0 48px;
+      border-bottom: 3px solid var(--ink);
       position: relative;
-      transition: background 0.2s;
     }
-    .feature:last-child { border-right: none; }
-    .feature:hover { background: var(--paper); }
-    .feature-num {
-      font-family: var(--font-mono);
+
+    .header-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .header-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    /* sticker badges — slight rotation for handmade feel */
+    .sticker {
+      display: inline-block;
+      font-family: var(--font-body);
       font-size: 11px;
-      letter-spacing: 0.12em;
+      font-weight: 700;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--muted);
+      padding: 5px 11px;
+      border: 2px solid var(--ink);
     }
-    .feature h3 {
+    .sticker-yellow { background: var(--yellow); color: var(--ink); transform: rotate(-1.5deg); }
+    .sticker-brown  { background: var(--brown);  color: white;      transform: rotate(1deg); }
+    .sticker-ink    { background: var(--ink);    color: var(--paper); transform: rotate(-0.5deg); }
+
+    h1 {
       font-family: var(--font-display);
-      font-size: 32px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
+      font-size: clamp(4rem, 11vw, 7rem);
+      font-weight: 400;
+      line-height: 0.9;
+      color: var(--ink);
+      margin-top: 8px;
+      margin-bottom: 22px;
+      transform: rotate(-0.3deg);
+      display: inline-block;
+      white-space: nowrap;
+    }
+    h1 .a11y { color: var(--ink); }
+    h1 .barker { color: var(--brown); }
+
+    .tagline {
+      font-size: clamp(1rem, 2vw, 1.1rem);
+      font-weight: 300;
+      color: var(--muted);
+      max-width: 48ch;
+      margin-bottom: 24px;
+    }
+
+    .header-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* buttons */
+    .btn {
+      display: inline-block;
+      padding: 11px 24px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 2.5px solid var(--ink);
+      color: var(--ink);
+      background: var(--paper);
+      transition: background 0.1s, color 0.1s;
+      transform: rotate(-0.3deg);
+    }
+    .btn:hover { background: var(--ink); color: var(--paper); }
+    .btn-primary {
+      background: var(--brown);
+      border-color: var(--brown);
+      color: white;
+      transform: rotate(0.4deg);
+    }
+    .btn-primary:hover { background: var(--ink); border-color: var(--ink); }
+
+    /* dog in header — judgemental while waiting */
+    .header-dog {
+      width: clamp(120px, 18vw, 180px);
+      transform: rotate(3deg);
+      flex-shrink: 0;
+      margin-top: 8px;
+    }
+
+    /* screenshot */
+    .screenshot-wrap {
+      margin-top: 36px;
+      border: 2.5px solid var(--ink);
+      position: relative;
+      transform: rotate(-0.2deg);
+    }
+    .screenshot-wrap::before {
+      content: 'scan result';
+      position: absolute;
+      top: -12px;
+      left: 18px;
+      background: var(--yellow);
+      border: 2px solid var(--ink);
+      padding: 1px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .screenshot-wrap img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* ── MAIN ── */
+    main { padding-top: 56px; }
+
+    section {
+      margin-bottom: 56px;
+      padding-bottom: 52px;
+      border-bottom: 2px dashed var(--rule);
+    }
+    section:last-of-type { border-bottom: none; margin-bottom: 0; }
+
+    .section-eyebrow {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 3px 8px;
+      margin-bottom: 12px;
+      transform: rotate(-0.5deg);
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 400;
       line-height: 1.05;
       color: var(--ink);
+      margin-bottom: 20px;
     }
-    .feature h3 em { font-style: normal; color: var(--terracotta); }
-    .feature p {
-      font-size: 15px;
-      color: var(--ink-soft);
-      line-height: 1.55;
-    }
-    .feature .glyph {
-      width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--ink);
-      border-radius: 50%;
-    }
-    .feature .glyph svg { width: 16px; height: 16px; stroke-width: 2; }
 
-    /* ── Rules table ───────────────────────────────── */
-    .rules-wrap {
-      border: 1px solid var(--ink);
-      border-radius: 4px;
-      background: var(--paper);
-      overflow: hidden;
+    h3 {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brown);
+      margin: 32px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid var(--brown);
+      display: inline-block;
     }
-    .rules-table {
+
+    p { margin-bottom: 14px; max-width: 62ch; }
+    a { color: var(--brown); text-underline-offset: 3px; }
+    a:hover { color: var(--ink); }
+    strong { font-weight: 600; }
+
+    code {
+      font-family: ui-monospace, monospace;
+      font-size: 0.84em;
+      background: var(--paper2);
+      border: 1.5px solid var(--rule);
+      padding: 1px 5px;
+    }
+
+    /* about */
+    .about-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px 40px;
+    }
+    @media (max-width: 560px) { .about-cols { grid-template-columns: 1fr; } }
+    .about-cols p { max-width: none; margin: 0; }
+
+    /* feature table */
+    .feature-table {
       width: 100%;
       border-collapse: collapse;
-      font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 15px;
     }
-    .rules-table thead th {
+    .feature-table th {
       text-align: left;
-      padding: 14px 18px;
-      background: var(--ink);
-      color: var(--bone);
-      font-weight: 500;
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      color: var(--muted);
+      border-bottom: 2.5px solid var(--ink);
+      padding: 4px 12px 8px 0;
     }
-    .rules-table td {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--line);
+    .feature-table td {
+      padding: 11px 12px 11px 0;
+      border-bottom: 1px dashed var(--rule);
       vertical-align: top;
+      line-height: 1.5;
     }
-    .rules-table tr:last-child td { border-bottom: none; }
-    .rules-table tr:hover td { background: var(--bone); }
-    .rules-table .rule-name { color: var(--ink); font-family: var(--font-body); font-size: 15px; font-weight: 500; }
-    .rules-table .wcag-pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 11px;
-      letter-spacing: 0.04em;
-      background: var(--bone-deep);
-      color: var(--ink-soft);
+    .feature-table td:first-child {
+      font-weight: 600;
+      width: 28%;
+      padding-right: 28px;
+      white-space: nowrap;
     }
-    .rules-table .level {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.05em;
-    }
-    .rules-table .level.A { color: var(--sage); }
-    .rules-table .level.AA { color: var(--terracotta); }
-    .rules-table .level.best { color: var(--muted); font-style: italic; }
+    .feature-table td:last-child { color: var(--muted); }
+    .feature-table tr:last-child td { border-bottom: none; }
 
-    /* ── Spec card / install ───────────────────────── */
-    .install-block {
+    /* rules */
+    .rules-list {
+      list-style: none;
+      padding: 0;
       display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 56px;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
     }
-    .install-steps { list-style: none; counter-reset: step; }
+    @media (max-width: 500px) { .rules-list { grid-template-columns: 1fr; } }
+    .rules-list li {
+      padding: 9px 20px 9px 0;
+      border-bottom: 1px dashed var(--rule);
+      font-size: 14px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .rules-list li:last-child, .rules-list li:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+    .badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 2px 5px;
+      border: 1.5px solid currentColor;
+      flex-shrink: 0;
+      transform: rotate(-1deg);
+      display: inline-block;
+    }
+    .badge-a   { color: var(--red); }
+    .badge-aa  { color: var(--brown); }
+    .badge-bp  { color: var(--muted); }
+
+    /* install */
+    .install-steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+      margin-top: 4px;
+    }
     .install-steps li {
       counter-increment: step;
-      padding: 22px 0;
-      border-bottom: 1px solid var(--line);
-      display: grid;
-      grid-template-columns: 56px 1fr;
-      gap: 18px;
-      align-items: start;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 13px 0;
+      border-bottom: 1px dashed var(--rule);
+      font-size: 15px;
     }
     .install-steps li:last-child { border-bottom: none; }
     .install-steps li::before {
-      content: "0" counter(step);
+      content: counter(step);
       font-family: var(--font-display);
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      font-size: 36px;
-      line-height: 1;
-      color: var(--terracotta);
+      font-size: 18px;
+      line-height: 28px;
+      text-align: center;
+      color: var(--paper);
+      background: var(--brown);
+      border: 2px solid var(--ink);
+      min-width: 30px;
+      width: 30px;
+      height: 30px;
+      display: block;
+      flex-shrink: 0;
+      transform: rotate(-2deg);
+      margin-top: 2px;
     }
-    .install-steps h4 {
-      font-family: var(--font-body);
-      font-size: 17px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: var(--ink);
-    }
-    .install-steps p { font-size: 15px; color: var(--ink-soft); }
-    .install-steps code {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      padding: 1px 6px;
-      background: var(--bone-deep);
-      border-radius: 3px;
-      color: var(--ink);
-    }
-    .install-side {
-      align-self: start;
-      position: sticky; top: 24px;
-      padding: 26px;
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      background: var(--paper);
-    }
-    .install-side h4 {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 14px;
-    }
-    .install-side .req {
-      display: flex; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px dashed var(--line);
-      font-family: var(--font-mono); font-size: 13px;
-    }
-    .install-side .req:last-child { border-bottom: none; }
-    .install-side .req .v { color: var(--ink); }
-    .install-side .req .k { color: var(--muted); }
 
-    /* ── Mood band ─────────────────────────────────── */
-    .moods {
-      background: var(--ink);
-      color: var(--bone);
-      padding: 96px 28px;
+    /* demo section — dog with speech bubble */
+    .demo-layout {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      margin-top: 4px;
     }
-    .moods-inner {
-      max-width: 1280px; margin: 0 auto;
-      display: grid;
-      grid-template-columns: 0.8fr 2fr;
-      gap: 48px;
-      align-items: start;
+    .demo-dog-wrap { flex-shrink: 0; }
+    .demo-dog {
+      width: 72px;
+      transform: rotate(-4deg);
     }
-    .moods .section-num { color: var(--terracotta); }
-    .moods .section-num::before { background: var(--terracotta); }
-    .moods .section-title { color: var(--bone); }
-    .moods .section-title em { color: var(--terracotta); }
-    .moods-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 28px;
-      margin-top: 24px;
-    }
-    .mood-card {
-      background: var(--paper);
-      color: var(--ink);
-      padding: 28px 26px 26px;
-      border-radius: 4px;
-      display: flex; flex-direction: column; gap: 16px;
-    }
-    .mood-img {
-      width: 96px; height: 96px;
-      background: var(--bone);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .mood-img img { width: 72px; height: 72px; }
-    .mood-card h4 {
-      font-family: var(--font-display);
-      font-size: 32px; font-weight: 600; line-height: 1;
-      letter-spacing: -0.02em;
-    }
-    .mood-card .mood-tag {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--terracotta);
-    }
-    .mood-card p { font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
-
-    /* ── Demo CTA ──────────────────────────────────── */
-    .demo-cta {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 96px 28px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 56px;
-      align-items: center;
-    }
-    .demo-cta .text h2 {
-      font-family: var(--font-display);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-      font-size: clamp(44px, 7vw, 88px);
-      line-height: 0.95;
-      letter-spacing: -0.02em;
-      margin-bottom: 24px;
-    }
-    .demo-cta .text h2 em { font-style: normal; color: var(--terracotta); }
-    .demo-cta .text p { font-size: 18px; color: var(--ink-soft); margin-bottom: 28px; max-width: 48ch; }
-    .demo-shot {
+    .demo-content { flex: 1; }
+    .demo-bubble {
+      background: white;
+      border: 2.5px solid var(--ink);
+      padding: 14px 18px;
       position: relative;
-      border: 1px solid var(--ink);
-      border-radius: 4px;
-      overflow: hidden;
-      box-shadow: 12px 12px 0 var(--terracotta);
-      background: var(--paper);
-      aspect-ratio: 16/10;
-    }
-    .demo-shot::before {
-      content: "";
-      position: absolute; inset: 0;
-      background-image:
-        repeating-linear-gradient(135deg, transparent 0 12px, rgba(26,20,16,0.03) 12px 13px);
-    }
-    .demo-shot .placeholder {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 12px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-    .demo-shot .placeholder .big {
-      font-family: var(--font-display);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-      font-size: 56px;
-      font-style: normal;
-      color: var(--terracotta);
-      text-transform: none;
-      letter-spacing: 0;
-    }
-    .demo-shot img { width: 100%; height: 100%; object-fit: cover; display: block; position: relative; z-index: 1; }
-
-    /* ── Footer ────────────────────────────────────── */
-    footer {
-      background: var(--ink);
-      color: var(--bone);
-      padding: 72px 28px 28px;
-    }
-    .foot-inner {
-      max-width: 1280px; margin: 0 auto;
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 48px;
-      padding-bottom: 56px;
-      border-bottom: 1px solid rgba(244,239,230,0.15);
-    }
-    .foot-brand h3 {
-      font-family: var(--font-wordmark);
-      font-size: 56px; font-weight: 400; line-height: 1; letter-spacing: 0.01em;
-      margin-bottom: 12px;
-    }
-    .foot-brand h3 em { color: var(--terracotta); font-style: normal; }
-    .foot-brand p { color: rgba(244,239,230,0.65); max-width: 32ch; font-size: 14px; }
-    .foot-col h5 {
-      font-family: var(--font-mono);
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
-      color: rgba(244,239,230,0.5);
       margin-bottom: 16px;
     }
-    .foot-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .foot-col a { color: var(--bone); text-decoration: none; font-size: 14px; }
-    .foot-col a:hover { color: var(--terracotta); }
-    .foot-bottom {
-      max-width: 1280px; margin: 0 auto;
-      padding-top: 24px;
-      display: flex; justify-content: space-between;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: rgba(244,239,230,0.4);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+    .demo-bubble::before {
+      content: '';
+      position: absolute;
+      left: -20px;
+      top: 14px;
+      width: 0; height: 0;
+      border-top: 9px solid transparent;
+      border-bottom: 9px solid transparent;
+      border-right: 18px solid var(--ink);
+    }
+    .demo-bubble::after {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 16px;
+      width: 0; height: 0;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      border-right: 14px solid white;
+    }
+    .demo-bubble p { margin: 0; font-size: 15px; max-width: none; }
+    @media (max-width: 480px) {
+      .demo-layout { flex-direction: column; }
+      .demo-bubble::before, .demo-bubble::after { display: none; }
     }
 
-    /* ── Responsive ────────────────────────────────── */
-    @media (max-width: 980px) {
-      .hero-grid, .install-block, .moods-inner, .demo-cta, .section-head, .foot-inner {
-        grid-template-columns: 1fr;
-        gap: 32px;
-      }
-      .stats-inner { grid-template-columns: repeat(2, 1fr); }
-      .stat-cell:nth-child(2) { border-right: none; }
-      .stat-cell:nth-child(1), .stat-cell:nth-child(2) { border-bottom: 1px solid var(--line); }
-      .features, .moods-grid { grid-template-columns: 1fr; }
-      .feature { border-right: none; border-bottom: 1px solid var(--line); }
-      .feature:last-child { border-bottom: none; }
-      .topbar nav { display: none; }
-      .install-side { position: static; }
+    /* ── FOOTER ── */
+    footer {
+      border-top: 3px solid var(--ink);
+      padding: 28px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    footer p { font-size: 13px; color: var(--muted); margin: 0; max-width: none; }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--ink); }
+    .footer-links {
+      display: flex; gap: 20px; list-style: none; padding: 0;
+    }
+    .footer-links a {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; text-decoration: none;
+      color: var(--ink); border-bottom: 1.5px solid var(--rule); padding-bottom: 1px;
+    }
+    .footer-links a:hover { color: var(--brown); border-color: var(--brown); }
+    .footer-left { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+    .footer-logo { font-family: var(--font-display); font-size: 1.8rem; color: var(--ink); margin: 0; font-weight: 400; line-height: 1; }
+    .footer-logo .a11y { color: var(--ink); }
+    .footer-logo .barker { color: var(--brown); }
+
+    @media (max-width: 600px) {
+      .header-inner { grid-template-columns: 1fr; }
+      .header-dog { display: none; }
     }
   </style>
-  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main">Skip to main content</a>
 
-  <div class="topbar">
-    <a class="brand-mark" href="/a11y-barker/">
-      <img src="barker.svg" alt="" aria-hidden="true">
-      A11y&nbsp;Barker
-    </a>
-    <nav aria-label="Primary">
-      <a href="#features">Features</a>
-      <a href="#rules">Rules</a>
-      <a href="#install">Install</a>
-      <a href="demo.html">Demo</a>
-      <a href="https://github.com/estherj-hsu/a11y-barker">GitHub <i data-lucide="external-link" class="icon-lucide" aria-hidden="true"></i></a>
-    </nav>
-  </div>
-
-  <main id="main">
-    <section class="hero">
-      <div class="hero-grid">
-        <div class="hero-text">
-          <p class="hero-eyebrow">Chrome DevTools extension</p>
-          <h1 class="hero-title">
-            See what your<br>
-            page <em>says</em><img class="barker-inline" src="barker.svg" alt="" aria-hidden="true"> out&nbsp;loud.
-          </h1>
-          <p class="hero-lede">
-            A11y Barker is a free DevTools panel that visualizes accessibility on any webpage — tab order, screen-reader names, heading structure, and WCAG checks, layered directly on the page you're inspecting.
-          </p>
-          <div class="cta-row">
-            <a class="btn btn-primary" href="https://github.com/estherj-hsu/a11y-barker">
-              Get on GitHub <i data-lucide="arrow-right" class="icon-lucide arrow" aria-hidden="true"></i>
-            </a>
-            <a class="btn btn-ghost" href="demo.html">
-              Try Paw Pals demo
-            </a>
-          </div>
-        </div>
-
-        <aside class="hero-side" aria-label="Sample scan output">
-          <div class="mascot-floater" aria-hidden="true">
-            <img src="barker.svg" alt="">
-          </div>
-          <div class="label">
-            <span>Sniffing paw-pals.local</span>
-            <span class="live">Live</span>
-          </div>
-          <div class="scan-list">
-            <div class="row"><span class="name">missing-image-alt</span><span class="tag fail">12 fail</span></div>
-            <div class="row"><span class="name">color-contrast-aa</span><span class="tag fail">8 fail</span></div>
-            <div class="row"><span class="name">heading-skip</span><span class="tag fail">3 fail</span></div>
-            <div class="row"><span class="name">label-missing</span><span class="tag fail">6 fail</span></div>
-            <div class="row"><span class="name">positive-tabindex</span><span class="tag warn">4 warn</span></div>
-            <div class="row"><span class="name">focus-outline</span><span class="tag warn">9 warn</span></div>
-            <div class="row"><span class="name">page-language</span><span class="tag fail">1 fail</span></div>
-            <div class="row"><span class="name">landmark-unique</span><span class="tag ok">pass</span></div>
-          </div>
-          <div class="footnote">
-            <span>57 issues · 11 rules</span>
-            <span>2.4s</span>
-          </div>
-        </aside>
-      </div>
-    </section>
-
-    <div class="stats">
-      <div class="stats-inner">
-        <div class="stat-cell">
-          <div class="stat-num">11<em>+</em></div>
-          <div class="stat-label">Static rules</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-num"><em>5</em></div>
-          <div class="stat-label">Overlay modes</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-num">SPA<em>✓</em></div>
-          <div class="stat-label">Auto re-scan</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-num"><em>$0</em></div>
-          <div class="stat-label">Open source</div>
-        </div>
-      </div>
-    </div>
-
-    <section class="block" id="features">
-      <div class="section-head">
-        <p class="section-num">01 — Capabilities</p>
+  <div class="page">
+    <header>
+      <div class="header-inner">
         <div>
-          <h2 class="section-title">A panel that <em>shows</em>,<br>not just lists.</h2>
-        </div>
-      </div>
-
-      <div class="features">
-        <article class="feature">
-          <span class="glyph"><i data-lucide="scan" aria-hidden="true"></i></span>
-          <p class="feature-num">Mode 01</p>
-          <h3>Overlays on the <em>live page</em></h3>
-          <p>Tab order, screen-reader names, heading structure, and <code>aria-hidden</code> regions painted directly over the DOM you're inspecting — never in a separate tab.</p>
-        </article>
-        <article class="feature">
-          <span class="glyph"><i data-lucide="flag" aria-hidden="true"></i></span>
-          <p class="feature-num">Mode 02</p>
-          <h3>Static rules with <em>WCAG anchors</em></h3>
-          <p>Eleven first-party checks for alts, labels, contrast, landmarks, headings, focus styles and more — every issue links to the WCAG criterion it cites.</p>
-        </article>
-        <article class="feature">
-          <span class="glyph"><i data-lucide="sparkles" aria-hidden="true"></i></span>
-          <p class="feature-num">Mode 03</p>
-          <h3>Optional <em>Claude review</em></h3>
-          <p>Drop your Anthropic key into <code>config.js</code> and Barker can ask Claude to review heading structure and image alt text contextually — toggleable, cached per sniff.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="moods">
-      <div class="moods-inner">
-        <div>
-          <p class="section-num">02 — Mascot</p>
-          <h2 class="section-title">Meet <em>Barker.</em><br>He has feelings.</h2>
-        </div>
-        <div>
-          <p class="section-lede" style="color: rgba(244,239,230,0.7);">
-            Barker's expression in the panel header reflects what he just sniffed. It's a glanceable status indicator — and a small reward when you ship a clean page.
-          </p>
-          <div class="moods-grid">
-            <div class="mood-card">
-              <div class="mood-img"><img src="barker.svg" alt=""></div>
-              <span class="mood-tag">Mood — Happy</span>
-              <h4>Good dog.</h4>
-              <p>Zero issues found. Tail wags. You earned it.</p>
-            </div>
-            <div class="mood-card">
-              <div class="mood-img"><img src="barker-judgemental.svg" alt=""></div>
-              <span class="mood-tag">Mood — Judgemental</span>
-              <h4>Watching.</h4>
-              <p>Default state. He's waiting for you to run a sniff.</p>
-            </div>
-            <div class="mood-card">
-              <div class="mood-img"><img src="barker-sad.svg" alt=""></div>
-              <span class="mood-tag">Mood — Sad</span>
-              <h4>Ruff.</h4>
-              <p>Issues found. The list is in the panel — Barker will wait.</p>
-            </div>
+          <div class="header-badges">
+            <span class="sticker sticker-yellow">Free &amp; Open Source</span>
+            <span class="sticker sticker-brown">Chrome DevTools</span>
+            <span class="sticker sticker-ink">WCAG 2</span>
+          </div>
+          <h1><span class="a11y">A11y</span><span class="barker">Barker</span></h1>
+          <p class="tagline">See tab order, screen reader names, heading structure, and WCAG issues directly on the page you are inspecting.</p>
+          <div class="header-cta">
+            <a class="btn btn-primary" href="https://github.com/estherj-hsu/a11y-barker" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            <a class="btn" href="demo.html">Try the Paw Pals demo</a>
           </div>
         </div>
+        <img class="header-dog" src="barker.svg" alt="" aria-hidden="true">
       </div>
-    </section>
 
-    <section class="block" id="rules">
-      <div class="section-head">
-        <p class="section-num">03 — Rules</p>
-        <div>
-          <h2 class="section-title">Eleven static checks,<br>each tied to a <em>criterion.</em></h2>
+      <div class="screenshot-wrap">
+        <img src="screenshot.png" width="1200" height="750" alt="A11y Barker DevTools panel scanning a page, listing accessibility issues such as missing alt text and color contrast.">
+      </div>
+    </header>
+
+    <main id="main">
+
+      <section aria-labelledby="about-heading">
+        <span class="section-eyebrow">About</span>
+        <h2 id="about-heading">What is A11y Barker?</h2>
+        <div class="about-cols">
+          <p><strong>A11y Barker</strong> adds a panel to Chrome DevTools that visualizes accessibility on any webpage — where focus goes, what screen readers announce, how headings are structured, and which elements fail WCAG checks.</p>
+          <p>Overlays run in an isolated shadow DOM so page styles never clash with highlights. A MutationObserver keeps analysis in sync when the DOM changes in single-page apps.</p>
         </div>
-      </div>
+      </section>
 
-      <div class="rules-wrap">
-        <table class="rules-table">
+      <section aria-labelledby="features-heading">
+        <span class="section-eyebrow">Features</span>
+        <h2 id="features-heading">What it does</h2>
+
+        <table class="feature-table">
           <thead>
             <tr>
-              <th>Rule</th>
-              <th>WCAG</th>
-              <th>Level</th>
-              <th>What it catches</th>
+              <th scope="col">Mode</th>
+              <th scope="col">Description</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td class="rule-name">Missing image alt</td><td><span class="wcag-pill">1.1.1</span></td><td><span class="level A">A</span></td><td>Images without an <code>alt</code> attribute or an empty one when context is needed.</td></tr>
-            <tr><td class="rule-name">Empty button or link</td><td><span class="wcag-pill">4.1.2</span></td><td><span class="level A">A</span></td><td>Interactive controls with no accessible name.</td></tr>
-            <tr><td class="rule-name">Missing input label</td><td><span class="wcag-pill">1.3.1 / 4.1.2</span></td><td><span class="level A">A</span></td><td>Inputs without a visible or programmatic label.</td></tr>
-            <tr><td class="rule-name">Positive tabindex</td><td><span class="wcag-pill">2.4.3</span></td><td><span class="level A">A</span></td><td><code>tabindex</code> &gt; 0 disrupting natural focus order.</td></tr>
-            <tr><td class="rule-name">Duplicate landmark</td><td><span class="wcag-pill">1.3.1</span></td><td><span class="level A">A</span></td><td>Multiple unlabelled landmarks of the same role.</td></tr>
-            <tr><td class="rule-name">Heading hierarchy skip</td><td><span class="wcag-pill">1.3.1</span></td><td><span class="level A">A</span></td><td>Going from <code>h1</code> straight to <code>h3</code>, etc.</td></tr>
-            <tr><td class="rule-name">Ambiguous link text</td><td><span class="wcag-pill">2.4.4</span></td><td><span class="level A">A</span></td><td>"Click here", "read more" — names that need context.</td></tr>
-            <tr><td class="rule-name">Missing page language</td><td><span class="wcag-pill">3.1.1</span></td><td><span class="level A">A</span></td><td><code>&lt;html&gt;</code> with no <code>lang</code> attribute.</td></tr>
-            <tr><td class="rule-name">Focus outline removed</td><td><span class="wcag-pill">2.4.7</span></td><td><span class="level AA">AA</span></td><td><code>outline: none</code> with no replacement focus style.</td></tr>
-            <tr><td class="rule-name">Insufficient color contrast</td><td><span class="wcag-pill">1.4.3</span></td><td><span class="level AA">AA</span></td><td>Text below 4.5:1 (or 3:1 for large text).</td></tr>
-            <tr><td class="rule-name">Label in name</td><td><span class="wcag-pill">2.5.3</span></td><td><span class="level AA">AA</span></td><td>Visible label not contained in the accessible name.</td></tr>
-            <tr><td class="rule-name">Large image &gt; 1MB</td><td><span class="wcag-pill">—</span></td><td><span class="level best">best practice</span></td><td>Heavy images that hurt mobile users on metered networks.</td></tr>
+            <tr>
+              <td>Tab order</td>
+              <td>Numbers each focusable element in keyboard navigation order with screen reader content inline.</td>
+            </tr>
+            <tr>
+              <td>Heading structure</td>
+              <td>Labels every h1–h6 on the page; a collapsible tree panel shows the full hierarchy.</td>
+            </tr>
+            <tr>
+              <td>aria-hidden</td>
+              <td>Outlines elements hidden from assistive technologies with a dashed border.</td>
+            </tr>
+            <tr>
+              <td>Issues overlay</td>
+              <td>Highlights elements with WCAG violations directly on the page, independent of other overlays.</td>
+            </tr>
+            <tr>
+              <td>AI checks</td>
+              <td>Optional Claude-powered alt text and heading structure review. Requires an Anthropic API key in <code>config.js</code>.</td>
+            </tr>
           </tbody>
         </table>
-      </div>
-    </section>
 
-    <section class="block" id="install">
-      <div class="section-head">
-        <p class="section-num">04 — Install</p>
-        <div>
-          <h2 class="section-title">Sideload in <em>under a minute.</em></h2>
-        </div>
-      </div>
+        <h3>Static rule checks</h3>
+        <ul class="rules-list" aria-label="WCAG rule checks">
+          <li><span class="badge badge-a">A</span> Missing image alt (1.1.1)</li>
+          <li><span class="badge badge-a">A</span> Empty button or link (4.1.2)</li>
+          <li><span class="badge badge-a">A</span> Missing input label (1.3.1)</li>
+          <li><span class="badge badge-a">A</span> Positive tabindex (2.4.3)</li>
+          <li><span class="badge badge-a">A</span> Duplicate landmark (1.3.1)</li>
+          <li><span class="badge badge-a">A</span> Heading hierarchy skip (1.3.1)</li>
+          <li><span class="badge badge-a">A</span> Ambiguous link text (2.4.4)</li>
+          <li><span class="badge badge-a">A</span> Missing page language (3.1.1)</li>
+          <li><span class="badge badge-aa">AA</span> Focus outline removed (2.4.7)</li>
+          <li><span class="badge badge-aa">AA</span> Color contrast (1.4.3)</li>
+          <li><span class="badge badge-aa">AA</span> Label in name (2.5.3)</li>
+          <li><span class="badge badge-bp">BP</span> Large image (&gt;1 MB)</li>
+        </ul>
+      </section>
 
-      <div class="install-block">
+      <section aria-labelledby="install-heading">
+        <span class="section-eyebrow">Installation</span>
+        <h2 id="install-heading">Get started</h2>
+        <p>A11y Barker is not on the Chrome Web Store. Install it as an unpacked extension:</p>
         <ol class="install-steps">
-          <li>
-            <div>
-              <h4>Clone the repo</h4>
-              <p>Grab <a href="https://github.com/estherj-hsu/a11y-barker">estherj-hsu/a11y-barker</a> from GitHub or download the zip.</p>
-            </div>
-          </li>
-          <li>
-            <div>
-              <h4>Open <code>chrome://extensions</code></h4>
-              <p>Works in Chrome, Edge, Brave, Arc — anything Chromium with Manifest V3.</p>
-            </div>
-          </li>
-          <li>
-            <div>
-              <h4>Enable Developer mode → Load unpacked</h4>
-              <p>Point it at the folder containing <code>manifest.json</code>.</p>
-            </div>
-          </li>
-          <li>
-            <div>
-              <h4>Open DevTools → A11y Barker tab</h4>
-              <p>Hit <strong>Sniff page</strong>. Toggle overlays. Watch Barker's mood change.</p>
-            </div>
-          </li>
-          <li>
-            <div>
-              <h4>Optional: add an Anthropic key</h4>
-              <p>Copy <code>config.js.sample</code> to <code>config.js</code> and paste your key. Reload the extension to enable AI checks.</p>
-            </div>
-          </li>
+          <li><span>Clone or download the <a href="https://github.com/estherj-hsu/a11y-barker">repository</a>.</span></li>
+          <li><span>Open <code>chrome://extensions</code> in Chrome or a Chromium-based browser.</span></li>
+          <li><span>Enable <strong>Developer mode</strong>, then click <strong>Load unpacked</strong> and select the folder containing <code>manifest.json</code>.</span></li>
+          <li><span>Open DevTools on any tab — find the <strong>A11y Barker</strong> panel and click <strong>Sniff page</strong>.</span></li>
         </ol>
+      </section>
 
-        <aside class="install-side">
-          <h4>System requirements</h4>
-          <div class="req"><span class="k">Browser</span><span class="v">Chromium · MV3</span></div>
-          <div class="req"><span class="k">DevTools</span><span class="v">Required</span></div>
-          <div class="req"><span class="k">License</span><span class="v">MIT</span></div>
-          <div class="req"><span class="k">AI checks</span><span class="v">Anthropic key (optional)</span></div>
-          <div class="req"><span class="k">Default model</span><span class="v">Haiku 4.5</span></div>
-          <div class="req"><span class="k">Storage</span><span class="v">Local only</span></div>
-        </aside>
-      </div>
-    </section>
-
-    <section class="demo-cta">
-      <div class="text">
-        <h2>Try it on a page<br>that <em>fails on purpose.</em></h2>
-        <p>Paw Pals is a fictional dog social network we built with intentional accessibility issues — missing alts, low-contrast text, broken tab order, repeated link names. Run Barker on it to see exactly what each rule catches.</p>
-        <div class="cta-row">
-          <a class="btn btn-primary" href="demo.html">Open the demo <i data-lucide="arrow-right" class="icon-lucide arrow" aria-hidden="true"></i></a>
-          <a class="btn btn-ghost" href="#rules">See all rules</a>
+      <section aria-labelledby="demo-heading">
+        <span class="section-eyebrow">Demo</span>
+        <h2 id="demo-heading">See it in action</h2>
+        <div class="demo-layout">
+          <div class="demo-dog-wrap">
+            <img class="demo-dog" src="barker-judgemental.svg" alt="" aria-hidden="true">
+          </div>
+          <div class="demo-content">
+            <div class="demo-bubble">
+              <p>Load <a href="demo.html">Paw Pals</a> in Chrome, open DevTools, and click <strong>Sniff page</strong>. You should see 50+ issues — missing alt text, contrast failures, unlabelled inputs, ambiguous links, and more.</p>
+            </div>
+            <p style="font-size: 14px; color: var(--muted);">Paw Pals is a fictional dog social network built with intentional accessibility problems, so you can see every overlay and rule in action before you run it on your own work.</p>
+          </div>
         </div>
-      </div>
-      <div class="demo-shot">
-        <img src="screenshot.png" alt="A11y Barker DevTools panel showing 57 issues found on the Paw Pals demo page, with overlays painting tab order numbers, heading levels, and red contrast warnings on the live page.">
-      </div>
-    </section>
-  </main>
+      </section>
 
-  <footer>
-    <div class="foot-inner">
-      <div class="foot-brand">
-        <h3>A11y <em>Barker</em></h3>
-        <p>An accessibility visualizer for Chrome DevTools. Free, open source, occasionally judgemental.</p>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <p class="footer-logo"><span class="a11y">A11y</span><span class="barker">Barker</span></p>
+        <p>Made with 🐾 by <a href="https://estherh.dev">Esther</a></p>
       </div>
-      <div class="foot-col">
-        <h5>Project</h5>
-        <ul>
-          <li><a href="https://github.com/estherj-hsu/a11y-barker">GitHub</a></li>
-          <li><a href="demo.html">Paw Pals demo</a></li>
-          <li><a href="#rules">Rule reference</a></li>
-        </ul>
-      </div>
-      <div class="foot-col">
-        <h5>Docs</h5>
-        <ul>
-          <li><a href="#install">Install</a></li>
-          <li><a href="#features">Features</a></li>
-          <li><a href="https://www.w3.org/WAI/WCAG22/quickref/">WCAG 2.2</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="foot-bottom">
-      <span>© 2026 A11y Barker</span>
-      <span>Made for screen readers and the people who love them.</span>
-    </div>
-  </footer>
-  <script>
-    lucide.createIcons();
-  </script>
+      <ul class="footer-links">
+        <li><a href="https://github.com/estherj-hsu/a11y-barker">GitHub</a></li>
+        <li><a href="demo.html">Demo</a></li>
+      </ul>
+    </footer>
+  </div>
 </body>
 </html>
