@@ -1,16 +1,16 @@
-# A11y Barker 🐶
+# A11yBarker 🐶
 
 A Chrome DevTools extension for visualizing accessibility on any webpage.
 
 🔍🐶 Barker the dog judges your markup. He's happy when your page is clean, sad when it's not, and judgemental when he's waiting.
 
-![A11y Barker scanning the Paw Pals demo page, showing 57 accessibility issues including missing alt text, insufficient colour contrast, and missing page language](docs/screenshot.png)
+![A11yBarker scanning the Paw Pals demo page, showing 57 accessibility issues including missing alt text, insufficient colour contrast, and missing page language](docs/screenshot.png)
 
 ---
 
 ## Demo
 
-Try it on the [Paw Pals demo page](https://estherh.dev/a11y-barker/demo.html) — a intentionally inaccessible dog social network built to showcase what A11y Barker catches.
+Try it on the [Paw Pals demo page](https://estherh.dev/a11y-barker/demo.html) — a intentionally inaccessible dog social network built to showcase what A11yBarker catches.
 
 ---
 
@@ -88,13 +88,13 @@ Requests go from the background service worker directly to Anthropic. The inspec
 
 ## Installation
 
-A11y Barker is not on the Chrome Web Store. To install:
+A11yBarker is not on the Chrome Web Store. To install:
 
 1. Clone or download this repo
 2. Go to `chrome://extensions`
 3. Enable **Developer mode** (top right)
 4. Click **Load unpacked** and select the repo folder
-5. Open DevTools on any page — find the **A11y Barker** tab
+5. Open DevTools on any page — find the **A11yBarker** tab
 
 ---
 
