@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>AI Alt Text Check — Sample Page</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 24px 24px 48px;
+      background: #f5f0eb;
+      color: #1a1209;
+    }
+    h1 { font-size: 1.2rem; margin: 0 0 4px; }
+    .intro { font-size: 0.82rem; color: #7a6652; margin: 0 0 28px; line-height: 1.5; max-width: 600px; }
+
+    .cases { display: flex; flex-wrap: wrap; gap: 16px; }
+    .case {
+      background: #fff;
+      border: 1px solid #e0d5c8;
+      border-radius: 8px;
+      width: 190px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .case img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
+    .case-body { padding: 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+    .alt-value {
+      font-size: 0.68rem;
+      font-family: monospace;
+      color: #5c3d1e;
+      background: #f0e8df;
+      padding: 3px 6px;
+      border-radius: 3px;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+
+    .verdict {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .verdict-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 2px 7px;
+      border-radius: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .st-good         { background: #d4edda; color: #1a5c2a; }
+    .st-generic      { background: #fff3cd; color: #7a5000; }
+    .st-missing      { background: #fde8e8; color: #8b1c1c; }
+    .st-dec-wrong    { background: #ede0f7; color: #5b1580; }
+
+    .verdict-reason {
+      font-size: 0.72rem;
+      color: #5a4a3a;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+<h1>AI Alt Text Check — Sample Page</h1>
+<p class="intro">
+  Same image, seven different alt values. The results below come from running A11yBarker's AI Check with image vision enabled — the AI sees both the alt text and the actual photo, so it can catch inaccuracies like a wrong breed, not just vague wording.
+</p>
+
+<main>
+  <div class="cases">
+
+    <div class="case">
+      <img src="tifa.jpg">
+      <div class="case-body">
+        <span class="alt-value">(no alt attribute)</span>
+        <div class="verdict">
+          <span class="verdict-pill st-missing">MISSING</span>
+        </div>
+        <p class="verdict-reason">No alt attribute on a meaningful image of a dog's face.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <img src="tifa.jpg" alt="">
+      <div class="case-body">
+        <span class="alt-value">alt=""</span>
+        <div class="verdict">
+          <span class="verdict-pill st-dec-wrong">DECORATIVE WRONG</span>
+        </div>
+        <p class="verdict-reason">Empty alt signals decorative, but the dog's face is the main content.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <img src="tifa.jpg" alt="image">
+      <div class="case-body">
+        <span class="alt-value">alt="image"</span>
+        <div class="verdict">
+          <span class="verdict-pill st-generic">TOO GENERIC</span>
+        </div>
+        <p class="verdict-reason">Generic placeholder — describes nothing about the actual content.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <img src="tifa.jpg" alt="dog">
+      <div class="case-body">
+        <span class="alt-value">alt="dog"</span>
+        <div class="verdict">
+          <span class="verdict-pill st-generic">TOO GENERIC</span>
+        </div>
+        <p class="verdict-reason">Subject is correct but too vague — no breed, pose, or framing detail.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <img src="tifa.jpg" alt="a brown dog">
+      <div class="case-body">
+        <span class="alt-value">alt="a brown dog"</span>
+        <div class="verdict">
+          <span class="verdict-pill st-generic">TOO GENERIC</span>
+        </div>
+        <p class="verdict-reason">Adds colour but still lacks breed, name, or compositional detail.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <img src="tifa.jpg" alt="a Shiba Inu sitting on the sofa looking at the camera">
+      <div class="case-body">
+        <span class="alt-value">alt="a Shiba Inu sitting on the sofa looking at the camera"</span>
+        <div class="verdict">
+          <span class="verdict-pill st-generic">TOO GENERIC</span>
+        </div>
+        <p class="verdict-reason">Specific-sounding but factually wrong — the dog is a Golden Retriever, not a Shiba Inu.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <img src="tifa.jpg" alt="Tifa, a Golden Retriever, sitting on the sofa looking at the camera">
+      <div class="case-body">
+        <span class="alt-value">alt="Tifa, a Golden Retriever, sitting on the sofa looking at the camera"</span>
+        <div class="verdict">
+          <span class="verdict-pill st-good">GOOD</span>
+        </div>
+        <p class="verdict-reason">Name, breed, pose, and location — specific, accurate, and complete.</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

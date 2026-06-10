@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>AI Heading Structure Check — Sample Page</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f0eb;
+      color: #1a1209;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      padding: 20px 24px 0;
+    }
+    .top-bar .page-title { font-size: 1.2rem; font-weight: 700; margin: 0 0 4px; }
+    .top-bar p { font-size: 0.82rem; color: #7a6652; margin: 0 0 20px; line-height: 1.5; max-width: 560px; }
+
+    /* ── Group tabs ── */
+    .group-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #d9cdc0;
+      padding: 0 24px;
+    }
+    .group-tab {
+      padding: 8px 18px 9px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #7a6652;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .group-tab:hover { color: #1a1209; }
+    .group-tab.active { color: #1a1209; border-bottom-color: #c8501e; }
+    .group-tab .tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 8px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+    .tag-fail { background: #fde6dc; color: #c8501e; }
+    .tag-pass { background: #dde8d8; color: #4f6b4a; }
+
+    /* ── Group panels ── */
+    .group-panel { display: none; padding: 24px; }
+    .group-panel.active { display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start; }
+
+    /* ── Article ── */
+    .article {
+      background: #fff;
+      border: 1px solid #e0d5c8;
+      border-radius: 8px;
+      padding: 28px 32px 28px 64px;
+      line-height: 1.65;
+    }
+    .article h1,
+    .article h2,
+    .article h3,
+    .article h4 { position: relative; }
+    .article h1::before,
+    .article h2::before,
+    .article h3::before,
+    .article h4::before {
+      position: absolute;
+      left: -44px;
+      top: 0.15em;
+      font-family: monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #c0b0a0;
+      letter-spacing: 0;
+      line-height: 1;
+      width: 36px;
+      text-align: right;
+    }
+    .article h1::before { content: 'H1'; }
+    .article h2::before { content: 'H2'; }
+    .article h3::before { content: 'H3'; }
+    .article h4::before { content: 'H4'; }
+    .article h1 { font-size: 1.6rem; margin: 0 0 12px; line-height: 1.2; }
+    .article h2 { font-size: 1.15rem; margin: 24px 0 8px; }
+    .article h3 { font-size: 0.95rem; margin: 16px 0 6px; }
+    .article h4 { font-size: 0.85rem; margin: 12px 0 4px; color: #5a4a3a; }
+    .article p  { font-size: 0.88rem; color: #4a3d33; margin: 0 0 10px; }
+
+    /* ── Expected issues sidebar ── */
+    .expected {
+      position: sticky;
+      top: 16px;
+    }
+    .expected-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #7a6652;
+      margin: 0 0 10px;
+    }
+    .issue-item {
+      background: #fff;
+      border: 1px solid #e0d5c8;
+      border-left: 3px solid #c8501e;
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: #4a3d33;
+    }
+    .issue-item .issue-num {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #c8501e;
+      margin-right: 4px;
+    }
+    .issue-item .heading-ref {
+      font-family: monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #7a6652;
+      display: block;
+      margin-bottom: 2px;
+    }
+    /* inline markers inside article headings */
+    .article h1 .marker,
+    .article h2 .marker,
+    .article h3 .marker,
+    .article h4 .marker {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+      font-weight: 400;
+    }
+    .marker-num {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #c8501e;
+      background: #fde6dc;
+      border-radius: 10px;
+      padding: 1px 6px;
+      font-family: monospace;
+    }
+    .marker-pill {
+      font-size: 0.58rem;
+      font-weight: 600;
+      color: #7a4030;
+      background: #fde6dc;
+      border: 1px solid #f0b8a0;
+      border-radius: 8px;
+      padding: 1px 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .no-issues {
+      background: #dde8d8;
+      border: 1px solid #b8d0b3;
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      color: #2d5a28;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <p class="page-title">AI Heading Structure Check — Sample Page</p>
+  <p>Three heading structures with real content. Switch groups and run A11yBarker → AI Check → Heading structure to see how the AI judges each case.</p>
+</div>
+
+<div class="group-tabs">
+  <button class="group-tab active" data-group="1">Group 1 <span class="tag tag-fail">FAIL</span></button>
+  <button class="group-tab"        data-group="2">Group 2 <span class="tag tag-fail">FAIL</span></button>
+  <button class="group-tab"        data-group="3">Group 3 <span class="tag tag-pass">PASS</span></button>
+</div>
+
+
+<!-- ── Group 1: Skipped levels + duplicate H1 ─────────────────── -->
+<div class="group-panel active" id="group-1">
+  <article class="article">
+    <h1>Dog Breeds of the World</h1>
+    <p>From the tiniest teacup poodle to the towering Great Dane, the world of dog breeds is endlessly fascinating. Each breed was shaped over centuries to fill a specific role — hunting, herding, guarding, or simply being an excellent companion.</p>
+
+    <h3>Small Breeds <span class="marker"><span class="marker-num">#1</span><span class="marker-pill">Skipped level</span></span></h3><!-- should be H2 -->
+    <p>Small dogs often pack big personalities into compact frames. Despite their size, many were originally bred as working dogs and retain sharp instincts to this day.</p>
+
+    <h4>Shiba Inu</h4>
+    <p>An ancient Japanese breed known for its fox-like face and spirited independence. Shibas are loyal to their families but aloof with strangers, and their dramatic "Shiba scream" has become an internet legend.</p>
+
+    <h4>Chihuahua</h4>
+    <p>The world's smallest dog breed, originating from Mexico. Chihuahuas are fiercely devoted and surprisingly bold — they have no idea they weigh under 3 kg.</p>
+
+    <h1>Large Breeds <span class="marker"><span class="marker-num">#2</span><span class="marker-pill">Duplicate H1</span></span></h1><!-- duplicate H1 -->
+    <p>Large breeds command attention wherever they go. Many were bred for demanding physical tasks and require plenty of exercise and mental stimulation to thrive.</p>
+
+    <h3>Golden Retriever</h3><!-- should be H2 -->
+    <p>Few dogs are as reliably cheerful as the Golden Retriever. Originally bred as a gundog in Scotland, Goldens now excel as family pets, therapy dogs, and search-and-rescue partners — all with a wagging tail.</p>
+
+    <h4>Labrador Retriever</h4>
+    <p>The world's most popular dog breed for decades running. Labs are gentle, trainable, and enthusiastic about absolutely everything, especially food.</p>
+  </article>
+
+  <aside class="expected">
+    <p class="expected-title">Expected issues</p>
+    <div class="issue-item">
+      <span class="issue-num">#1</span><span class="heading-ref">H3: Small Breeds</span>
+      Skipped level — H1 jumps to H3 (skips H2). Should be H2.
+    </div>
+    <div class="issue-item">
+      <span class="issue-num">#2</span><span class="heading-ref">H1: Large Breeds</span>
+      Duplicate H1 — second H1 on the page. Should be H2.
+    </div>
+  </aside>
+</div>
+
+
+<!-- ── Group 2: Vague / CTA headings ──────────────────────────── -->
+<div class="group-panel" id="group-2">
+  <article class="article">
+    <h1>Tifa's Diary</h1>
+    <p>Welcome to the official diary of Tifa, a Golden Retriever with strong opinions about squirrels, naps, and the precise location of her food bowl.</p>
+
+    <h2>Monday</h2>
+    <p>Woke up at 6 am and immediately sat on my human's face until she got up. Priorities. Breakfast was the usual kibble but I detected a hint of sweet potato — 10/10. Spent the afternoon guarding the garden from a suspicious leaf.</p>
+
+    <h2>More <span class="marker"><span class="marker-num">#1</span><span class="marker-pill">Vague</span></span></h2><!-- vague -->
+    <p>There is always more to say about a Tuesday. The postman arrived. I alerted the household. My job here is done. Napped for four hours to recover from the effort.</p>
+
+    <h3>Read More <span class="marker"><span class="marker-num">#2</span><span class="marker-pill">Vague + CTA</span></span></h3><!-- CTA -->
+    <p>Wednesday brought rain. I am not a fan of rain. I sat by the window and communicated my displeasure through sustained eye contact. Eventually my human produced a towel and some treats. Acceptable resolution.</p>
+
+    <h2>Latest <span class="marker"><span class="marker-num">#3</span><span class="marker-pill">Vague</span></span></h2><!-- decorative label -->
+    <p>Thursday is park day. I ran. I sniffed. I found a tennis ball of unknown origin and decided it was mine now. A Labrador tried to dispute this claim. We reached a diplomatic solution involving a stick.</p>
+
+    <h3>Click Here <span class="marker"><span class="marker-num">#4</span><span class="marker-pill">CTA</span></span></h3><!-- CTA -->
+    <p>Friday. The weekend is within sight. My human worked from home again, which meant I could supervise from the armchair. Productivity was high on my end. I supervised four video calls and one phone call.</p>
+  </article>
+
+  <aside class="expected">
+    <p class="expected-title">Expected issues</p>
+    <div class="issue-item">
+      <span class="issue-num">#1</span><span class="heading-ref">H2: More</span>
+      Vague text — does not describe the section content.
+    </div>
+    <div class="issue-item">
+      <span class="issue-num">#2</span><span class="heading-ref">H3: Read More</span>
+      Vague text and CTA — does not describe section content.
+    </div>
+    <div class="issue-item">
+      <span class="issue-num">#3</span><span class="heading-ref">H2: Latest</span>
+      Vague text — does not describe the section content.
+    </div>
+    <div class="issue-item">
+      <span class="issue-num">#4</span><span class="heading-ref">H3: Click Here</span>
+      Vague text and CTA — describes an action, not a section topic.
+    </div>
+  </aside>
+</div>
+
+
+<!-- ── Group 3: Clean structure (PASS) ────────────────────────── -->
+<div class="group-panel" id="group-3">
+  <article class="article">
+    <h1>A Guide to Dog Breeds</h1>
+    <p>Choosing a dog is one of life's great decisions. Whether you want a running partner, a lap dog, or a loyal guard, there is a breed shaped exactly for that role. This guide covers four popular breeds across two size categories.</p>
+
+    <h2>Small Breeds</h2>
+    <p>Smaller dogs are well suited to apartment living and often travel more easily, though many still need significant daily exercise and mental stimulation.</p>
+
+    <h3>Shiba Inu</h3>
+    <p>Originating from Japan, the Shiba Inu is one of the oldest surviving dog breeds. Compact, alert, and famously stubborn, Shibas form deep bonds with their families while remaining reserved around strangers. They shed heavily twice a year — be prepared.</p>
+
+    <h3>Chihuahua</h3>
+    <p>The Chihuahua may be the world's smallest breed, but its confidence is unbounded. These dogs are intensely loyal and can be quite protective of their chosen person. Early socialisation is key to a well-rounded Chihuahua.</p>
+
+    <h2>Large Breeds</h2>
+    <p>Large breeds often need more space, more food, and more exercise, but they repay that investment in full. Many are gentle giants who are surprisingly calm indoors when their exercise needs are met.</p>
+
+    <h3>Golden Retriever</h3>
+    <p>The Golden Retriever consistently ranks among the most popular family dogs worldwide. Bred in Scotland as a gundog, Goldens are eager to please, easy to train, and genuinely happy most of the time. They are also exceptional therapy and assistance dogs.</p>
+
+    <h3>Labrador Retriever</h3>
+    <p>Friendly, outgoing, and endlessly enthusiastic, the Labrador Retriever has held the title of most popular dog breed for decades in many countries. Labs come in black, yellow, and chocolate, and all three varieties share the same boundless energy and love of water.</p>
+
+    <h2>Choosing the Right Breed</h2>
+    <p>The best breed is the one that fits your lifestyle, not just your aesthetic preferences. Consider daily exercise time, living space, grooming requirements, and whether the breed's typical temperament suits your household before you commit.</p>
+  </article>
+
+  <aside class="expected">
+    <p class="expected-title">Expected issues</p>
+    <div class="no-issues">No issues — heading structure is clean and logical.</div>
+  </aside>
+</div>
+
+
+<script>
+  document.querySelectorAll('.group-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const g = tab.dataset.group;
+      document.querySelectorAll('.group-tab').forEach(t => t.classList.toggle('active', t.dataset.group === g));
+      document.querySelectorAll('.group-panel').forEach(p => p.classList.toggle('active', p.id === `group-${g}`));
+    });
+  });
+</script>
+</body>
+</html>
