@@ -3,28 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="A11y Barker is a free Chrome DevTools extension that visualizes accessibility on any webpage: tab order, screen reader labels, headings, WCAG checks, and optional Claude AI reviews.">
+  <meta name="description" content="A11yBarker is a free Chrome DevTools extension that visualizes accessibility on any webpage: tab order, screen reader labels, headings, WCAG checks, and optional Claude AI reviews.">
   <meta name="keywords" content="accessibility, a11y, Chrome extension, DevTools, WCAG, WCAG 2, screen reader, tab order, color contrast, alt text, Chrome DevTools extension">
   <meta name="author" content="Esther Hsu">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#2c1a0e">
 
-  <title>A11y Barker — Accessibility visualizer for Chrome DevTools</title>
+  <title>A11yBarker — Accessibility visualizer for Chrome DevTools</title>
 
   <link rel="canonical" href="https://estherh.dev/a11y-barker/">
   <link rel="icon" type="image/png" sizes="32x32" href="../assets/dog/icon-32.png">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://estherh.dev/a11y-barker/">
-  <meta property="og:title" content="A11y Barker — Accessibility visualizer for Chrome DevTools">
+  <meta property="og:title" content="A11yBarker — Accessibility visualizer for Chrome DevTools">
   <meta property="og:description" content="Visualize accessibility on any webpage from Chrome DevTools: overlays for tab order and headings, WCAG rule checks, SPA-aware updates, and optional AI-powered reviews.">
   <meta property="og:image" content="https://estherh.dev/a11y-barker/og.png">
-  <meta property="og:image:alt" content="A11y Barker logo and tagline: Accessibility visualizer for Chrome DevTools">
+  <meta property="og:image:alt" content="A11yBarker logo and tagline: Accessibility visualizer for Chrome DevTools">
   <meta property="og:locale" content="en_US">
-  <meta property="og:site_name" content="A11y Barker">
+  <meta property="og:site_name" content="A11yBarker">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="A11y Barker — Accessibility visualizer for Chrome DevTools">
+  <meta name="twitter:title" content="A11yBarker — Accessibility visualizer for Chrome DevTools">
   <meta name="twitter:description" content="Visualize accessibility on any webpage from Chrome DevTools: overlays, WCAG checks, and optional AI reviews.">
   <meta name="twitter:image" content="https://estherh.dev/a11y-barker/og.png">
 
@@ -36,7 +36,7 @@
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "A11y Barker",
+    "name": "A11yBarker",
     "description": "Chrome DevTools extension for visualizing accessibility on webpages: tab order, screen reader content, heading structure, WCAG static rules, and optional Anthropic Claude AI checks.",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Chrome",
@@ -399,6 +399,28 @@
       margin-top: 2px;
     }
 
+    /* plain link list — same rhythm as install-steps but no counter */
+    .page-links {
+      list-style: none;
+      padding: 0;
+      margin-top: 8px;
+    }
+    .page-links li {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 13px 0;
+      border-bottom: 1px dashed var(--rule);
+      font-size: 15px;
+    }
+    .page-links li:last-child { border-bottom: none; }
+    .page-links li::before {
+      content: '→';
+      color: var(--brown);
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
     /* demo section — dog with speech bubble */
     .demo-layout {
       display: flex;
@@ -432,7 +454,7 @@
     .demo-bubble::after {
       content: '';
       position: absolute;
-      left: -15px;
+      left: -14px;
       top: 16px;
       width: 0; height: 0;
       border-top: 7px solid transparent;
@@ -501,7 +523,7 @@
       </div>
 
       <div class="screenshot-wrap">
-        <img src="screenshot.png" width="1200" height="750" alt="A11y Barker DevTools panel scanning a page, listing accessibility issues such as missing alt text and color contrast.">
+        <img src="screenshot.png" width="1200" height="750" alt="A11yBarker DevTools panel scanning a page, listing accessibility issues such as missing alt text and color contrast.">
       </div>
     </header>
 
@@ -509,16 +531,16 @@
 
       <section aria-labelledby="about-heading">
         <span class="section-eyebrow">About</span>
-        <h2 id="about-heading">What is A11y Barker?</h2>
+        <h2 id="about-heading">What is A11yBarker?</h2>
         <div class="about-cols">
-          <p><strong>A11y Barker</strong> adds a panel to Chrome DevTools that visualizes accessibility on any webpage — where focus goes, what screen readers announce, how headings are structured, and which elements fail WCAG checks.</p>
+          <p><strong>A11yBarker</strong> adds a panel to Chrome DevTools that visualizes accessibility on any webpage: where focus goes, what screen readers announce, how headings are structured, and which elements fail WCAG checks.</p>
           <p>Overlays run in an isolated shadow DOM so page styles never clash with highlights. A MutationObserver keeps analysis in sync when the DOM changes in single-page apps.</p>
         </div>
       </section>
 
       <section aria-labelledby="features-heading">
         <span class="section-eyebrow">Features</span>
-        <h2 id="features-heading">What it does</h2>
+        <h2 id="features-heading">What it does?</h2>
 
         <table class="feature-table">
           <thead>
@@ -571,12 +593,12 @@
       <section aria-labelledby="install-heading">
         <span class="section-eyebrow">Installation</span>
         <h2 id="install-heading">Get started</h2>
-        <p>A11y Barker is not on the Chrome Web Store. Install it as an unpacked extension:</p>
+        <p>A11yBarker is not on the Chrome Web Store. Install it as an unpacked extension:</p>
         <ol class="install-steps">
           <li><span>Clone or download the <a href="https://github.com/estherj-hsu/a11y-barker">repository</a>.</span></li>
           <li><span>Open <code>chrome://extensions</code> in Chrome or a Chromium-based browser.</span></li>
           <li><span>Enable <strong>Developer mode</strong>, then click <strong>Load unpacked</strong> and select the folder containing <code>manifest.json</code>.</span></li>
-          <li><span>Open DevTools on any tab — find the <strong>A11y Barker</strong> panel and click <strong>Sniff page</strong>.</span></li>
+          <li><span>Open DevTools on any tab. Find the <strong>A11yBarker</strong> panel and click <strong>Sniff page</strong>.</span></li>
         </ol>
       </section>
 
@@ -589,11 +611,18 @@
           </div>
           <div class="demo-content">
             <div class="demo-bubble">
-              <p>Load <a href="demo.html">Paw Pals</a> in Chrome, open DevTools, and click <strong>Sniff page</strong>. You should see 50+ issues — missing alt text, contrast failures, unlabelled inputs, ambiguous links, and more.</p>
+              <p>Load <a href="demo.html">Paw Pals</a> in Chrome, open DevTools, and click <strong>Sniff page</strong>. You should see 50+ issues: missing alt text, contrast failures, unlabelled inputs, ambiguous links, and more.</p>
             </div>
             <p style="font-size: 14px; color: var(--muted);">Paw Pals is a fictional dog social network built with intentional accessibility problems, so you can see every overlay and rule in action before you run it on your own work.</p>
           </div>
         </div>
+
+        <h3>AI check sample pages</h3>
+        <p>Not sure what good alt text or heading structure looks like? These pages show real examples with expected AI verdicts, useful for testing the AI check feature or understanding what it flags.</p>
+        <ul class="page-links" aria-label="AI sample pages">
+          <li><a href="alt-sample.html">Alt text samples</a>: one image, seven alt values from MISSING to GOOD</li>
+          <li><a href="headings-sample.html">Heading structure samples</a>: two failing groups and one passing heading hierarchy</li>
+        </ul>
       </section>
 
     </main>
@@ -606,6 +635,8 @@
       <ul class="footer-links">
         <li><a href="https://github.com/estherj-hsu/a11y-barker">GitHub</a></li>
         <li><a href="demo.html">Demo</a></li>
+        <li><a href="alt-sample.html">Alt samples</a></li>
+        <li><a href="headings-sample.html">Heading samples</a></li>
       </ul>
     </footer>
   </div>

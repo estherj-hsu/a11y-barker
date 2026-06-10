@@ -4,7 +4,7 @@ A Chrome DevTools extension for visualizing accessibility on any webpage.
 
 🔍🐶 Barker the dog judges your markup. He's happy when your page is clean, sad when it's not, and judgemental when he's waiting.
 
-![A11yBarker scanning the Paw Pals demo page, showing 57 accessibility issues including missing alt text, insufficient colour contrast, and missing page language](docs/screenshot.png)
+![A11yBarker scanning the Paw Pals demo page, showing 60+ accessibility issues including missing alt text, insufficient colour contrast, and missing page language](docs/screenshot.png)
 
 ---
 
@@ -49,16 +49,18 @@ MutationObserver watches for DOM and attribute changes (`hidden`, `aria-hidden`,
 
 ### AI Checks (Anthropic)
 
-With a valid API key, the panel shows **AI Check** (below **Overlays**) with two opt-in toggles (both off by default) and a **Claude model** selector:
+With a valid API key, the panel shows **AI Check** (below **Overlays**) with two opt-in toggles (both off by default):
 
 | Toggle | What it does |
 |---|---|
 | Heading structure | After **Sniff page**, sends the page's visible heading list to Claude (JSON in / HTML out). Click an issue row to scroll to that heading. |
-| Images alt | After **Sniff page**, reviews each non–data-URL image's `alt` in context (JSON in / HTML out). Click a row to highlight that image on the page. |
+| Images alt | After **Sniff page**, fetches each image, resizes it, and sends both the image and its `alt` attribute to Claude for review. Verdicts: **MISSING**, **DECORATIVE OK/WRONG**, **TOO GENERIC**, **GOOD**. Click a row to highlight that image on the page. |
 
-**Model:** **Haiku** is the default (faster, lower cost). Choose **Sonnet** in the panel for higher-quality analysis. Your choice is stored in extension storage and overrides the default in `config.js` once set.
+Because the AI sees the actual image, it can catch factually wrong alt text — e.g. an alt that says "Shiba Inu" when the photo shows a Golden Retriever.
 
-Only toggles that are on when the sniff finishes trigger an API call. Turning a toggle off then on again reuses the cached result for that sniff until you Sniff again, Clear, or navigate — no duplicate requests. Changing the model clears the cache and re-runs visible AI sections when applicable.
+**Model and image size:** both are set in `config.js` and displayed in the panel for reference.
+
+Only toggles that are on when the sniff finishes trigger an API call. Turning a toggle off then on again reuses the cached result for that sniff until you Sniff again, Clear, or navigate — no duplicate requests.
 
 ---
 
@@ -66,19 +68,21 @@ Only toggles that are on when the sniff finishes trigger an API call. Turning a 
 
 1. Copy `config.js.sample` to `config.js` in the extension root (same folder as `manifest.json`). The real `config.js` is gitignored; the sample is safe to commit.
 2. Set your Anthropic API key in `globalThis.A11Y_BARKER_CONFIG.apiKey`.
-3. Optionally adjust **`model`** (default Claude Haiku) and **`maxTokens`** (default `1024`) — see below.
+3. Optionally adjust `model`, `maxTokens`, and `imageSize` — see below.
 4. Reload the extension in `chrome://extensions` so the service worker picks up `config.js`.
-5. Open DevTools, enable **Heading structure** and/or **Images alt** under **AI Check**, and pick **Haiku** or **Sonnet** if you like.
+5. Open DevTools, enable **Heading structure** and/or **Images alt** under **AI Check**.
 6. Run **Sniff page**.
 
 ```js
 // config.js (copy from config.js.sample)
 globalThis.A11Y_BARKER_CONFIG = {
   apiKey: 'your-anthropic-api-key',
-  // Used when the panel has not chosen a model yet (panel selection overrides via storage).
-  model: 'claude-haiku-4-5-20251001', // or 'claude-sonnet-4-5-20251022'
+  // Claude model to use. Check https://platform.claude.com/docs/about-claude/models for the latest model IDs.
+  model: 'claude-haiku-4-5-20251001',
   // Max output tokens per request; increase if AI reviews are truncated.
   maxTokens: 1024,
+  // Max long-edge px for images sent to Claude during alt text review. suggested: 400 | 500 | 600 | 800 | 1568
+  imageSize: 500,
 };
 ```
 
@@ -131,6 +135,8 @@ a11y-barker/
 ├── docs/
 │   ├── index.html              # Project landing page (SEO)
 │   ├── demo.html               # Paw Pals intentionally broken demo
+│   ├── alt-sample.html         # AI alt text check sample — one image, seven alt values
+│   ├── headings-sample.html    # AI heading structure check sample — two failing, one passing group
 │   ├── og.png                  # Open Graph / social preview image
 │   └── screenshot.png          # Panel screenshot
 └── assets/
@@ -151,7 +157,7 @@ A single coordinator collects badge data from all overlay types, groups by eleme
 When an element has an issue, its existing badge (tab, heading, aria-hidden) turns red. If no other overlay is active for that element, a standalone red issue badge is rendered instead. The Issues toggle works independently of other overlays.
 
 **AI calls via background.js**
-Routing AI requests through the service worker avoids CORS. The API key, default model, and `maxTokens` are read from local `config.js` (not in the repo). The panel can override the model per install via `chrome.storage.local`; until then, `config.js` `model` applies.
+Routing AI requests through the service worker avoids CORS. The API key, model, `maxTokens`, and `imageSize` are all read from local `config.js` (not in the repo) and displayed in the panel for reference.
 
 **Performance API for image size**
 Image file sizes are read from `performance.getEntriesByType('resource')` — no extra network request needed.

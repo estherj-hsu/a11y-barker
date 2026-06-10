@@ -1,6 +1,6 @@
 /**
  * Filename: utils/dom.js
- * Purpose: DOM utility functions for A11y Barker — issue grouping and document-order sorting.
+ * Purpose: DOM utility functions for A11yBarker — issue grouping and document-order sorting.
  */
 (function () {
   /**
