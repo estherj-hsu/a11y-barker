@@ -421,46 +421,87 @@
     }
 
     .ai-model-wrap { margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--border); }
-    .ai-model-fieldset {
-      border: none;
-      margin: 0;
-      padding: 0;
-      min-width: 0;
+    .ai-model-info {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
     }
-    .ai-model-legend {
+    .ai-model-label {
       font-size: 12px;
       font-weight: 600;
       color: var(--text-muted);
-      padding: 0;
-      margin-bottom: 6px;
+      white-space: nowrap;
     }
-    .ai-model-radio-group { display: flex; flex-direction: column; gap: 4px; }
-    .ai-model-radio-row {
+    .ai-model-display {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+    /* ── Results tabs ──────────────────────────────────────────── */
+    .results-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .results-tab {
+      flex: 1;
+      padding: 8px 4px 9px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      font-size: 12px;
-      font-family: var(--font-ui);
-      color: var(--text-primary);
-      padding: 6px 8px;
-      border-radius: 4px;
-      transition: background 0.1s;
+      justify-content: center;
+      gap: 5px;
+      transition: color 0.15s, border-color 0.15s;
     }
-    .ai-model-radio-row:hover { background: var(--bg-hover); }
-    .ai-model-radio-row input {
-      margin: 0;
+    .results-tab:hover { color: var(--text-primary); }
+    .results-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+    .tab-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--accent);
+      color: var(--btn-scan-text);
+      border-radius: 10px;
+      padding: 1px 5px;
+      min-width: 16px;
+      text-align: center;
+      display: none;
+    }
+    .tab-badge.visible { display: inline-block; }
+    .tab-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      display: none;
       flex-shrink: 0;
-      cursor: pointer;
-      accent-color: var(--accent);
     }
-    .ai-model-radio-row:focus-within {
-      outline: none;
+    .tab-dot.visible { display: inline-block; }
+    .tab-panel { display: flex; flex-direction: column; gap: 18px; }
+    .tab-panel[hidden] { display: none !important; }
+
+    /* ── Locked AI toggles (post-scan) ────────────────────────── */
+    #ai-check-toggles.locked .toggle-row {
+      pointer-events: none;
+      opacity: 0.45;
+      cursor: not-allowed;
     }
-    .ai-model-radio-row input:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
+    .ai-toggles-locked-hint {
+      font-size: 11px;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      margin-top: 6px;
+      display: none;
     }
+    .ai-toggles-locked-hint.visible { display: block; }
+
     .ai-key-error {
       margin-top: 10px;
       padding: 8px 10px;
@@ -475,6 +516,48 @@
     }
     .ai-key-error[hidden] {
       display: none;
+    }
+    .ai-token-estimate {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+    }
+    .ai-check-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+    }
+    .ai-result-error-block {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--red-dim);
+    }
+    .ai-result-error-block--network {
+      background: var(--amber-dim);
+    }
+    .ai-result-error-block--parse {
+      background: var(--bg-raised);
+    }
+    .ai-result-error-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--red);
+      margin-bottom: 6px;
+    }
+    .ai-result-error-block--network .ai-result-error-title {
+      color: var(--amber);
+    }
+    .ai-result-error-block--parse .ai-result-error-title {
+      color: var(--text-muted);
     }
   </style>
 </head>
@@ -504,38 +587,43 @@
       <div id="ai-check-section" class="ai-check-section" style="display:none">
         <div class="section-label">AI Check</div>
         <div class="toggles" id="ai-check-toggles"></div>
+        <p class="ai-toggles-locked-hint" id="ai-toggles-locked-hint">⚠️ Clear to change AI settings</p>
         <div id="ai-model-wrap" class="ai-model-wrap" style="display: none">
-          <fieldset class="ai-model-fieldset">
-            <legend class="ai-model-legend">Claude model</legend>
-            <div id="ai-model-radio-group" class="ai-model-radio-group">
-              <label class="ai-model-radio-row">
-                <input type="radio" name="ai-model" id="ai-model-haiku" value="claude-haiku-4-5-20251001" />
-                <span>Haiku — faster (default)</span>
-              </label>
-              <label class="ai-model-radio-row">
-                <input type="radio" name="ai-model" id="ai-model-sonnet" value="claude-sonnet-4-5-20251022" />
-                <span>Sonnet — more accurate</span>
-              </label>
-            </div>
-          </fieldset>
+          <div class="ai-model-info">
+            <span class="ai-model-label">Claude model</span>
+            <span id="ai-model-display" class="ai-model-display"></span>
+          </div>
+          <div class="ai-model-info">
+            <span class="ai-model-label">Image size</span>
+            <span id="ai-imagesize-display" class="ai-model-display"></span>
+          </div>
           <div id="ai-key-error" class="ai-key-error" role="alert" hidden></div>
         </div>
       </div>
-      <div class="issues-header" id="issues-header" style="display:none">
-        <span class="section-label">Issues found</span>
-        <div class="issue-count" id="issue-count">0</div>
+      <div class="results-tabs">
+        <button class="results-tab active" id="tab-btn-issues">
+          Issues <span class="tab-badge" id="tab-badge-issues"></span>
+        </button>
+        <button class="results-tab" id="tab-btn-ai">
+          AI Review <span class="tab-dot" id="tab-dot-ai"></span>
+        </button>
       </div>
-      <div id="issue-area">
-        <div class="empty-state" id="issue-empty">Click Sniff to find issues</div>
-        <div class="issue-list" id="issue-list" style="display:none"></div>
+      <div class="tab-panel" id="tab-panel-issues">
+        <div id="issue-area">
+          <div class="empty-state" id="issue-empty">Click Sniff to find issues</div>
+          <div class="issue-list" id="issue-list" style="display:none"></div>
+        </div>
       </div>
-      <div id="ai-heading-section" class="ai-section" style="display:none">
-        <div class="section-label">Heading structure review</div>
-        <div id="heading-check-result" class="alt-check-result heading-text-review-result" aria-live="polite"></div>
-      </div>
-      <div id="ai-section" class="ai-section" style="display:none">
-        <div class="section-label">Alt text review</div>
-        <div id="alt-check-result" class="alt-check-result alt-text-review-result" aria-live="polite"></div>
+      <div class="tab-panel" id="tab-panel-ai" hidden>
+        <div class="empty-state" id="ai-tab-empty">Enable AI Check toggles above and Sniff to run AI review</div>
+        <div id="ai-heading-section" class="ai-section" style="display:none">
+          <div class="section-label">Heading structure review</div>
+          <div id="heading-check-result" class="alt-check-result heading-text-review-result" aria-live="polite"></div>
+        </div>
+        <div id="ai-section" class="ai-section" style="display:none">
+          <div class="section-label">Alt text review</div>
+          <div id="alt-check-result" class="alt-check-result alt-text-review-result" aria-live="polite"></div>
+        </div>
       </div>
     </div>
   </div>

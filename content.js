@@ -16,14 +16,6 @@
   const HEADING_KEY = 'a11yBarkerHeading';
   const ARIA_HIDDEN_KEY = 'a11yBarkerAriaHidden';
   const ISSUES_PANEL_KEY = 'a11yBarkerIssuesPanel';
-  const AI_MODEL_KEY = 'a11yBarkerAiModel';
-  const AI_MODEL_HAIKU = 'claude-haiku-4-5-20251001';
-  const AI_MODEL_SONNET = 'claude-sonnet-4-5-20251022';
-
-  function resolveAiModelId(stored) {
-    return stored === AI_MODEL_SONNET ? AI_MODEL_SONNET : AI_MODEL_HAIKU;
-  }
-
   const DEFAULTS = {
     [TAB_KEY]: true,
     [SR_KEY]: true,
@@ -623,6 +615,38 @@
             reply({ ok: false, error: e?.message || 'Export failed' });
           }
           break;
+        case 'estimateAltCheck': {
+          const checker = window.A11yBarkerAltChecker;
+          const estimateFn = window.A11yBarkerTokenEstimate?.estimateInputTokens;
+          if (!checker || !estimateFn) {
+            reply({ ok: false, error: 'Alt checker not loaded' });
+            break;
+          }
+          const images = checker.collectImageData(document);
+          if (!images.length) {
+            reply({ ok: false, error: 'No images on this page' });
+            break;
+          }
+          const prompt = checker.buildPrompt(images);
+          reply({ ok: true, estimatedTokens: estimateFn(prompt), itemCount: images.length });
+          break;
+        }
+        case 'estimateHeadingCheck': {
+          const checker = window.A11yBarkerHeadingChecker;
+          const estimateFn = window.A11yBarkerTokenEstimate?.estimateInputTokens;
+          if (!checker || !estimateFn) {
+            reply({ ok: false, error: 'Heading checker not loaded' });
+            break;
+          }
+          const headings = checker.collectHeadingData(document);
+          if (!headings.length) {
+            reply({ ok: false, error: 'No headings on this page' });
+            break;
+          }
+          const prompt = checker.buildPrompt(headings);
+          reply({ ok: true, estimatedTokens: estimateFn(prompt), itemCount: headings.length });
+          break;
+        }
         case 'runAltCheck': {
           const checker = window.A11yBarkerAltChecker;
           if (!checker) {
@@ -635,22 +659,16 @@
             break;
           }
           const prompt = checker.buildPrompt(images);
-          chrome.storage.local.get([AI_MODEL_KEY], (data) => {
-            const payload = { action: 'aiAltCheck', prompt };
-            if (data[AI_MODEL_KEY] !== undefined) {
-              payload.model = resolveAiModelId(data[AI_MODEL_KEY]);
-            }
-            chrome.runtime.sendMessage(
-              { from: 'panel', payload },
-              (bgRes) => {
-                if (chrome.runtime.lastError) {
-                  reply({ ok: false, error: chrome.runtime.lastError.message });
-                  return;
-                }
-                reply(bgRes);
+          chrome.runtime.sendMessage(
+            { from: 'panel', payload: { action: 'aiAltCheck', prompt, images } },
+            (bgRes) => {
+              if (chrome.runtime.lastError) {
+                reply({ ok: false, error: chrome.runtime.lastError.message });
+                return;
               }
-            );
-          });
+              reply(bgRes);
+            }
+          );
           break;
         }
         case 'runHeadingCheck': {
@@ -665,22 +683,16 @@
             break;
           }
           const prompt = checker.buildPrompt(headings);
-          chrome.storage.local.get([AI_MODEL_KEY], (data) => {
-            const payload = { action: 'aiHeadingCheck', prompt };
-            if (data[AI_MODEL_KEY] !== undefined) {
-              payload.model = resolveAiModelId(data[AI_MODEL_KEY]);
-            }
-            chrome.runtime.sendMessage(
-              { from: 'panel', payload },
-              (bgRes) => {
-                if (chrome.runtime.lastError) {
-                  reply({ ok: false, error: chrome.runtime.lastError.message });
-                  return;
-                }
-                reply(bgRes);
+          chrome.runtime.sendMessage(
+            { from: 'panel', payload: { action: 'aiHeadingCheck', prompt } },
+            (bgRes) => {
+              if (chrome.runtime.lastError) {
+                reply({ ok: false, error: chrome.runtime.lastError.message });
+                return;
               }
-            );
-          });
+              reply(bgRes);
+            }
+          );
           break;
         }
         case 'highlight':
