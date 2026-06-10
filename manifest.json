@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "A11y Barker",
-  "version": "0.1.0",
+  "name": "A11yBarker",
+  "version": "0.1.1",
   "description": "Accessibility visualizer: tab order, focus, screen reader content",
   "icons": {
     "16": "assets/dog/icon-16.png",
@@ -32,6 +32,7 @@
         "rules-registry.js",
         "overlay/HeadingTreePanel.js",
         "utils/dom.js",
+        "utils/tokenEstimate.js",
         "ai/altChecker.js",
         "ai/headingChecker.js",
         "content.js"

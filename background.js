@@ -2,44 +2,65 @@ let HAS_LOCAL_CONFIG = false;
 let CONFIG_READY = Promise.resolve();
 
 function loadOptionalConfig() {
-  const configUrl = chrome.runtime.getURL('config.js');
-  CONFIG_READY = fetch(configUrl)
-    .then((res) => {
-      if (!res.ok) return null;
-      return res.text();
-    })
-    .then((src) => {
-      if (!src || !src.trim()) return;
-      // Evaluate local user config in service-worker global scope.
-      // eslint-disable-next-line no-new-func
-      Function(src)();
-      HAS_LOCAL_CONFIG = true;
-    })
-    .catch(() => {
-      HAS_LOCAL_CONFIG = false;
-    });
+  try {
+    importScripts('config.js');
+    HAS_LOCAL_CONFIG = true;
+  } catch (_) {
+    HAS_LOCAL_CONFIG = false;
+  }
+  CONFIG_READY = Promise.resolve();
 }
 
 loadOptionalConfig();
 
 const DEFAULT_AI_MODEL = 'claude-haiku-4-5-20251001';
-const ALLOWED_AI_MODELS = new Set([
-  'claude-haiku-4-5-20251001',
-  'claude-sonnet-4-5-20251022',
-]);
-
-function normalizeAiModel(m) {
-  if (typeof m === 'string' && ALLOWED_AI_MODELS.has(m)) return m;
-  return DEFAULT_AI_MODEL;
-}
-
-/** Payload wins; then `config.js` `model`; then Haiku. */
-function resolveAiModel(payload) {
-  return normalizeAiModel(payload?.model ?? globalThis.A11Y_BARKER_CONFIG?.model);
-}
 
 function getDefaultModelFromConfig() {
-  return normalizeAiModel(globalThis.A11Y_BARKER_CONFIG?.model);
+  const m = globalThis.A11Y_BARKER_CONFIG?.model;
+  return typeof m === 'string' && m.trim() ? m.trim() : DEFAULT_AI_MODEL;
+}
+
+function resolveAiModel() {
+  return getDefaultModelFromConfig();
+}
+
+const DEFAULT_IMAGE_SIZE = 500;
+const IMAGE_SIZE_MIN = 100;
+const IMAGE_SIZE_MAX = 1568;
+
+function getImageSize() {
+  const raw = globalThis.A11Y_BARKER_CONFIG?.imageSize;
+  if (raw === undefined || raw === null) return DEFAULT_IMAGE_SIZE;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_IMAGE_SIZE;
+  return Math.min(IMAGE_SIZE_MAX, Math.max(IMAGE_SIZE_MIN, Math.round(n)));
+}
+
+/**
+ * Fetch an image URL and return a base64 JPEG string, resized so the long edge
+ * does not exceed maxPx. Uses OffscreenCanvas (available in service workers).
+ * @param {string} url
+ * @param {number} maxPx
+ * @returns {Promise<string>} base64-encoded JPEG
+ */
+async function fetchAndResizeImage(url, maxPx) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`fetch ${res.status}`);
+  const blob = await res.blob();
+  const bitmap = await createImageBitmap(blob);
+  const { width, height } = bitmap;
+  const scale = Math.min(1, maxPx / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale));
+  const h = Math.max(1, Math.round(height * scale));
+  const canvas = new OffscreenCanvas(w, h);
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  const resized = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
+  const buf = await resized.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
 }
 
 const DEFAULT_MAX_TOKENS = 1024;
@@ -56,6 +77,106 @@ function resolveMaxTokens() {
   return Math.min(MAX_TOKENS_MAX, Math.max(MAX_TOKENS_MIN, i));
 }
 
+/**
+ * Build Claude vision content blocks for alt text review.
+ * @param {Array<{src:string, alt:string|null, context:string}>} images
+ * @param {Record<string,string>} base64Map  src → base64 JPEG string
+ * @returns {Array<object>}
+ */
+function buildVisionContent(images, base64Map) {
+  const schema = '{\n  "images": [\n    {\n      "index": 1,\n      "status": "GOOD | TOO GENERIC | MISSING | DECORATIVE OK | DECORATIVE WRONG",\n      "reason": "brief reason"\n    }\n  ]\n}';
+  const intro = [
+    'You are an accessibility expert reviewing image alternative text on a web page.',
+    'For each image you will see the alt metadata AND the actual image.',
+    'Judge whether the alt text (or lack of it) accurately and specifically describes what the image shows.',
+    '',
+    'Respond with ONLY a single JSON object and nothing else.',
+    '- No markdown, no code fences, no commentary before or after the JSON.',
+    '- Include exactly one object in "images" per input image, same order, with "index" 1..N.',
+    '- "status" must be exactly one of: GOOD, TOO GENERIC, MISSING, DECORATIVE OK, DECORATIVE WRONG',
+    '  - MISSING: no alt attribute.',
+    '  - DECORATIVE OK / DECORATIVE WRONG: empty alt — OK if truly decorative, WRONG if the image conveys meaning.',
+    '  - GOOD: alt is specific, accurate, and matches the actual image content.',
+    '  - TOO GENERIC: alt exists but is vague or does not match the image (e.g. wrong subject, wrong breed, "image", filename only).',
+    '- "reason" is a short string for each image.',
+    '',
+    'Exact shape:',
+    schema,
+    '',
+    'Images:',
+  ].join('\n');
+
+  const blocks = [{ type: 'text', text: intro }];
+  images.forEach((img, i) => {
+    const altDesc = img.alt === null ? '(alt attribute missing)' : img.alt === '' ? '(decorative: empty alt)' : JSON.stringify(img.alt);
+    const ctx = img.context ? `Context: ${img.context}` : 'Context: (none)';
+    blocks.push({ type: 'text', text: `Image ${i + 1}:\n  alt: ${altDesc}\n  ${ctx}` });
+    const b64 = base64Map[img.src];
+    if (b64) blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } });
+  });
+  return blocks;
+}
+
+function isNetworkFetchError(err) {
+  if (!err) return false;
+  if (err instanceof TypeError) return true;
+  const msg = String(err.message || err);
+  return /failed to fetch|network|networkerror|load failed|aborted|timeout/i.test(msg);
+}
+
+function classifyAnthropicFailure(status, data, parseFailed) {
+  const errType = data?.error?.type;
+  const errMsg = data?.error?.message;
+  const aiAuthError =
+    status === 401 ||
+    status === 403 ||
+    errType === 'authentication_error' ||
+    (typeof errType === 'string' && errType.toLowerCase().includes('authentication'));
+
+  if (aiAuthError) {
+    return {
+      ok: false,
+      error: errMsg || 'Invalid API key. Check config.js and your Anthropic key.',
+      errorKind: 'auth',
+      aiAuthError: true,
+    };
+  }
+
+  if (parseFailed) {
+    return {
+      ok: false,
+      error: 'Could not parse API response (invalid JSON).',
+      errorKind: 'parse',
+      aiAuthError: false,
+    };
+  }
+
+  if (status === 429) {
+    return {
+      ok: false,
+      error: errMsg || 'Rate limit exceeded. Wait a moment and try again.',
+      errorKind: 'api',
+      aiAuthError: false,
+    };
+  }
+
+  if (status >= 500) {
+    return {
+      ok: false,
+      error: errMsg || `Anthropic server error (${status}). Try again later.`,
+      errorKind: 'api',
+      aiAuthError: false,
+    };
+  }
+
+  return {
+    ok: false,
+    error: errMsg || 'API returned no content',
+    errorKind: 'api',
+    aiAuthError: false,
+  };
+}
+
 const CONTENT_SCRIPTS = [
   'overlay/index.js',
   'overlay/coordinator.js',
@@ -70,6 +191,7 @@ const CONTENT_SCRIPTS = [
   'rules-registry.js',
   'overlay/HeadingTreePanel.js',
   'utils/dom.js',
+  'utils/tokenEstimate.js',
   'ai/altChecker.js',
   'ai/headingChecker.js',
   'content.js',
@@ -87,53 +209,90 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         hasConfig: HAS_LOCAL_CONFIG,
         hasApiKey,
         defaultModel: getDefaultModelFromConfig(),
+        imageSize: getImageSize(),
       });
     });
     return true;
   }
 
   if (msg.from === 'panel' && (msg.payload?.action === 'aiAltCheck' || msg.payload?.action === 'aiHeadingCheck')) {
-    CONFIG_READY.then(() => {
+    CONFIG_READY.then(async () => {
       const apiKey = globalThis.A11Y_BARKER_CONFIG?.apiKey;
       if (!apiKey) {
-        sendResponse({ ok: false, error: 'No API key in config.js' });
+        sendResponse({
+          ok: false,
+          error: 'No API key in config.js',
+          errorKind: 'auth',
+          aiAuthError: true,
+        });
         return;
       }
+
+      let content = msg.payload.prompt;
+      if (msg.payload.action === 'aiAltCheck' && Array.isArray(msg.payload.images) && msg.payload.images.length) {
+        const maxPx = getImageSize();
+        const base64Map = {};
+        await Promise.all(msg.payload.images.map(async (img) => {
+          try {
+            base64Map[img.src] = await fetchAndResizeImage(img.src, maxPx);
+          } catch (_) {
+            // image fetch failed — this slot will be text-only
+          }
+        }));
+        content = buildVisionContent(msg.payload.images, base64Map);
+      }
+
       fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
           'content-type': 'application/json',
-          // Required for browser/extension contexts so Anthropic allows the request (BYO key).
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: resolveAiModel(msg.payload),
+          model: resolveAiModel(),
           max_tokens: resolveMaxTokens(),
-          messages: [{ role: 'user', content: msg.payload.prompt }],
+          messages: [{ role: 'user', content }],
         }),
       })
         .then(async (r) => {
+          const rawText = await r.text();
           let data = {};
-          try {
-            data = await r.json();
-          } catch (_) { /* non-JSON body */ }
+          let parseFailed = false;
+          if (rawText) {
+            try {
+              data = JSON.parse(rawText);
+            } catch (_) {
+              parseFailed = true;
+            }
+          } else if (r.ok) {
+            parseFailed = true;
+          }
           const text = data.content?.[0]?.text;
-          if (text != null && text !== '') {
+          if (!parseFailed && text != null && text !== '') {
             sendResponse({ ok: true, result: text });
             return;
           }
-          const errMsg = data.error?.message || 'API returned no content';
-          const errType = data.error?.type;
-          const aiAuthError =
-            r.status === 401 ||
-            r.status === 403 ||
-            errType === 'authentication_error' ||
-            (typeof errType === 'string' && errType.toLowerCase().includes('authentication'));
-          sendResponse({ ok: false, error: errMsg, aiAuthError });
+          sendResponse(classifyAnthropicFailure(r.status, data, parseFailed));
         })
-        .catch((e) => sendResponse({ ok: false, error: e.message, aiAuthError: false }));
+        .catch((e) => {
+          if (isNetworkFetchError(e)) {
+            sendResponse({
+              ok: false,
+              error: 'Network request failed. Check your connection and try again.',
+              errorKind: 'network',
+              aiAuthError: false,
+            });
+            return;
+          }
+          sendResponse({
+            ok: false,
+            error: e?.message || 'Request failed',
+            errorKind: 'api',
+            aiAuthError: false,
+          });
+        });
     });
     return true;
   }

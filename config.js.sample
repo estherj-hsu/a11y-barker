@@ -1,8 +1,9 @@
 globalThis.A11Y_BARKER_CONFIG = {
   apiKey: '', // copy this file to config.js and set your Anthropic API key
-  // Default Claude model when the panel has not chosen one yet (panel can override via storage).
-  // 'claude-haiku-4-5-20251001' | 'claude-sonnet-4-5-20251022'
+  // Claude model to use. Check https://platform.claude.com/docs/about-claude/models for the latest model IDs.
   model: 'claude-haiku-4-5-20251001',
   // Max output tokens per AI request (Anthropic Messages API). Raise if reviews are cut off.
   maxTokens: 1024,
+  // Max long-edge px for images sent to Claude during alt text review. suggested: 400 | 500 | 600 | 800 | 1568
+  imageSize: 500,
 };

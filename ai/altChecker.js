@@ -109,5 +109,66 @@
     ].join('\n');
   }
 
-  window.A11yBarkerAltChecker = { collectImageData, buildPrompt, listAltCheckImages };
+  /**
+   * Build Claude vision content blocks (text + image interleaved).
+   * @param {Array<{ src: string, alt: string|null, context: string }>} images
+   * @param {Record<string, string>} base64Map  src → base64 jpeg string
+   * @returns {Array<object>} Claude content block array
+   */
+  function buildVisionContent(images, base64Map) {
+    const schema = [
+      '{',
+      '  "images": [',
+      '    {',
+      '      "index": 1,',
+      '      "status": "GOOD | TOO GENERIC | MISSING | DECORATIVE OK | DECORATIVE WRONG",',
+      '      "reason": "brief reason"',
+      '    }',
+      '  ]',
+      '}',
+    ].join('\n');
+
+    const intro = [
+      'You are an accessibility expert reviewing image alternative text on a web page.',
+      'For each image you will see the alt metadata AND the actual image.',
+      'Judge whether the alt text (or lack of it) accurately and specifically describes what the image shows.',
+      '',
+      'Respond with ONLY a single JSON object and nothing else.',
+      '- No markdown, no code fences, no commentary before or after the JSON.',
+      '- Include exactly one object in "images" per input image, same order, with "index" 1..N.',
+      '- "status" must be exactly one of: GOOD, TOO GENERIC, MISSING, DECORATIVE OK, DECORATIVE WRONG',
+      '  - MISSING: no alt attribute.',
+      '  - DECORATIVE OK / DECORATIVE WRONG: empty alt — OK if truly decorative, WRONG if the image conveys meaning.',
+      '  - GOOD: alt is specific, accurate, and matches the actual image content.',
+      '  - TOO GENERIC: alt exists but is vague or does not match the image (e.g. wrong subject, wrong breed, "image", filename only).',
+      '- "reason" is a short string for each image.',
+      '',
+      'Exact shape:',
+      schema,
+      '',
+      'Images:',
+    ].join('\n');
+
+    const blocks = [{ type: 'text', text: intro }];
+
+    images.forEach((img, i) => {
+      const n = i + 1;
+      const altDesc =
+        img.alt === null
+          ? '(alt attribute missing)'
+          : img.alt === ''
+            ? '(decorative: empty alt)'
+            : JSON.stringify(img.alt);
+      const ctx = img.context ? `Context: ${img.context}` : 'Context: (none)';
+      blocks.push({ type: 'text', text: `Image ${n}:\n  alt: ${altDesc}\n  ${ctx}` });
+      const b64 = base64Map[img.src];
+      if (b64) {
+        blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } });
+      }
+    });
+
+    return blocks;
+  }
+
+  window.A11yBarkerAltChecker = { collectImageData, buildPrompt, buildVisionContent, listAltCheckImages };
 })();
